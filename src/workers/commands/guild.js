@@ -114,8 +114,8 @@ async function guild(interaction) {
         const embed4 = new EmbedBuilder()
            .setTitle(`${dat.prefix} War logs:`)
            .setFooter({text: `${ulang.page} 4 / 5 - ${ulang.req_took} ${new Date().getTime()-st_time}ms`})
-        if (!g_ter) embed4.setDescription('\`\`\`ml\nNo History\`\`\`')
-        if (g_ter) {
+        if (!g_ter.length) embed4.setDescription('\`\`\`ml\nNo History\`\`\`')
+        if (g_ter.length) {
             const fields = [{name: "War Logs:", value: `\`\`\`diff\n${g_ter.slice(0, 10).join("\n\n")}\`\`\``, inline: true}]
             if (g_ter.length>10) fields.push({name: "War Logs:", value: `\`\`\`diff\n${g_ter.slice(10, 20).join("\n\n")}\`\`\``, inline: true})
             embed4.addFields(fields)
