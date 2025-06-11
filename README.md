@@ -15,3 +15,6 @@ General Purpose DiscordBot made for messing around with random API's
 
 > [!NOTE]
 > This Bot a fun project and not meant to be for full use, There will be small goofy features but feel free to leave suggestions
+
+> [!NOTE]
+> Invite using the following: https://discord.com/oauth2/authorize?client_id=1229359673233375273 
