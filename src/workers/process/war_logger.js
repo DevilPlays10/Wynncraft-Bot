@@ -21,14 +21,16 @@ async function call(){
             const pushtoDB = []
             for (ent of Object.entries(res.data)) {
                 if (ent[1].guild.uuid != obj[ent[0]].guild.uuid) {
-                    pushtoDB.push({
+                    const out = {
                         terr: ent[0],
                         capturer: ent[1].guild,
                         capturer_total: valuesARR.filter(guild=>guild.uuid==ent[1].guild.uuid).length,
                         prev_holder: obj[ent[0]].guild, 
                         prev_holder_total: valuesARR.filter(guild=>guild.uuid==obj[ent[0]].guild.uuid).length,
                         timeHeld: Number(((new Date()-new Date(obj[ent[0]].acquired))/1000).toFixed())
-                    })
+                    }
+                    pushtoDB.push(out)
+                    logdisc(out)
                 }
             }
             DBUpdate(pushtoDB)
