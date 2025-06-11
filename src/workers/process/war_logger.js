@@ -1,7 +1,8 @@
 const axios = require('axios')
-const { data, updateVariable, send } = require('../../index.js')
+const { data: config, updateVariable, send } = require('../../index.js')
 const fs = require('fs')
 const { EmbedBuilder } = require('discord.js')
+const sqlite3 = require('sqlite3').verbose()
 
 let obj = {}
 
@@ -9,26 +10,28 @@ module.exports = (async ()=>{
     call()
     setInterval(() => {
         call()
-    }, 30000);
+    }, 15000);
 })()
 
 async function call(){
-    await axios.get(`${data.urls.wyn}guild/list/territory`).then(res=>{
+    await axios.get(`${config.urls.wyn}guild/list/territory`).then(res=>{
         if (res.status != 200) return
         if (Object.values(obj).length) {
             const valuesARR = Object.values(res.data).map(ent=>ent.guild)
+            const pushtoDB = []
             for (ent of Object.entries(res.data)) {
                 if (ent[1].guild.uuid != obj[ent[0]].guild.uuid) {
-                    addtojson({
+                    pushtoDB.push({
                         terr: ent[0],
                         capturer: ent[1].guild,
                         capturer_total: valuesARR.filter(guild=>guild.uuid==ent[1].guild.uuid).length,
                         prev_holder: obj[ent[0]].guild, 
                         prev_holder_total: valuesARR.filter(guild=>guild.uuid==obj[ent[0]].guild.uuid).length,
-                        timeHeld: new Date()-new Date(obj[ent[0]].acquired)
+                        timeHeld: Number(((new Date()-new Date(obj[ent[0]].acquired))/1000).toFixed())
                     })
                 }
             }
+            DBUpdate(pushtoDB)
             obj=res.data
         } else obj = res.data
     }).catch(e=>{
@@ -36,21 +39,57 @@ async function call(){
     })
 }
 
-function addtojson(json) {
-    logdisc(json)
-    if (json.capturer.prefix.toLowerCase() == "none") return
-    const { data: dat } = JSON.parse(fs.readFileSync(data.storage+"/process/terr.json"))
-    if (!dat[json.capturer.uuid]) dat[json.capturer.uuid] = []
-    dat[json.capturer.uuid].unshift({type: "took", territory: json.terr, o_guild: json.prev_holder, time: new Date().getTime(), heldfor: json.timeHeld})
-    if (!dat[json.prev_holder.uuid]) dat[json.prev_holder.uuid] = []
-    dat[json.prev_holder.uuid].unshift({type: "lost", territory: json.terr, o_guild: json.capturer, time: new Date().getTime(), heldfor: json.timeHeld})
-    dat[json.capturer.uuid].slice(0, 50)
-    dat[json.prev_holder.uuid].slice(0, 50)
-    updateVariable(data.storage+"/process/terr.json", "data", dat)
+let updateList = []
+/**
+ * Adds an array to territory DB
+ * @param {*} data array of data to add into territory DB
+ */
+function DBUpdate(data) {
+    updateList.push(...data);
+    if (!updateList?.length) return;
+
+    try {
+        const db = new sqlite3.Database(`${config.storage}/process/territory.db`, (err) => {
+            if (err) {
+                console.error('Database connection error:', err);
+                return;
+            }
+            for (const d of data) {
+                db.run(
+                    `INSERT INTO Territories 
+                    (Held_For, Time, Territory, GuildUUID, GuildName, GuildPrefix, GuildTotal, PreviousGuildUUID, PreviousGuildName, PreviousGuildPrefix, PreviousGuildTotal)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        d.timeHeld,
+                        Math.floor(new Date().getTime() / 1000),
+                        d.terr,
+                        d.capturer.uuid.replace(/-/g, ''),
+                        d.capturer.name,
+                        d.capturer.prefix,
+                        d.capturer_total,
+                        d.prev_holder.uuid.replace(/-/g, ''),
+                        d.prev_holder.name,
+                        d.prev_holder.prefix,
+                        d.prev_holder_total
+                    ],
+                    (err) => {
+                        if (err) console.error('Insert error:', err);
+                    }
+                );
+            }
+            db.close((err) => {
+                if (err) console.error('Error closing DB:', err);
+            });
+        });
+
+        updateList = [];
+    } catch (e) {
+        console.error('Unexpected error:', e);
+    }
 }
 
 async function logdisc(arg) {
-    const {terr:track} = JSON.parse(fs.readFileSync(data.storage+"/process/tracker_data.json"))
+    const {terr:track} = JSON.parse(fs.readFileSync(config.storage+"/process/tracker_data.json"))
     for (guild_data of Object.values(track)) {
         for (channel of Object.entries(guild_data.data)) {
             if (channel[0]=="<global>") {
