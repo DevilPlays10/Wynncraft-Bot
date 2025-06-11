@@ -11,7 +11,7 @@ function getGuildFromDB(guildUUID) {
         });
 
         const uuid = guildUUID.replace(/-/g, '');
-        db.all(`SELECT * FROM Territories WHERE GuildUUID = ? OR PreviousGuildUUID = ? ORDER BY Time ASC LIMIT 20`, [uuid, uuid], (err, rows) => {
+        db.all(`SELECT * FROM Territories WHERE GuildUUID = ? OR PreviousGuildUUID = ? ORDER BY Time DESC LIMIT 20`, [uuid, uuid], (err, rows) => {
             db.close(); // close inside the callback
             if (err) return reject(err);
             resolve(rows);
@@ -107,7 +107,7 @@ async function guild(interaction) {
         }
         //pahe 4 terr history
         const terr_data = await getGuildFromDB(res.data.uuid)
-        const g_ter = terr_data.sort((a, b) => b.Time - a.Time).map(ent=>`${ent.GuildUUID==dat.uuid.replace(/-/g, '')? 
+        const g_ter = terr_data.map(ent=>`${ent.GuildUUID==dat.uuid.replace(/-/g, '')? 
             `+ Took (${ent.GuildTotal-1} > ${ent.GuildTotal}) ${ent.Territory}\n+ From ${ent.PreviousGuildName} [${ent.PreviousGuildPrefix}] (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal})\n+ Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`: 
             `- Lost (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal}) ${ent.Territory}\n- To ${ent.GuildName} [${ent.GuildPrefix}] (${ent.GuildTotal-1} > ${ent.GuildTotal})\n- Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`
         }`)
