@@ -1,11 +1,25 @@
 const { getLang, data, axios } = require('../../index.js')
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
-const fs = require('fs')
+const sqlite3 = require('sqlite3').verbose()
 
 const ints = {}
 
+function getGuildFromDB(guildUUID) {
+    return new Promise((resolve, reject) => {
+        const db = new sqlite3.Database(`${data.storage}/process/territory.db`, (err) => {
+            if (err) return reject(err);
+        });
+
+        const uuid = guildUUID.replace(/-/g, '');
+        db.all(`SELECT * FROM Territories WHERE GuildUUID = ? OR PreviousGuildUUID = ? ORDER BY Time ASC LIMIT 20`, [uuid, uuid], (err, rows) => {
+            db.close(); // close inside the callback
+            if (err) return reject(err);
+            resolve(rows);
+        });
+    });
+}
+
 async function guild(interaction) {
-    const { data:terr_json } = JSON.parse(fs.readFileSync(data.storage+"/process/terr.json"))
     const st_time = new Date().getTime()
     const msg = await interaction.deferReply({
         withResponse: true
@@ -91,8 +105,12 @@ async function guild(interaction) {
                 embed3.addFields({name: `Territories: (0)`, value: "\`\`\`js\nGuild owns 0 Territories\`\`\`"})
             }
         }
-        //pahe 4
-        const g_ter = terr_json[dat.uuid]?.slice(0, 20).map(ent=>ent.type=="took"? `+ Took - ${ent.territory}\n+ From ${ent.o_guild.name} [${ent.o_guild.prefix}]\n+ ${timer(ent.time)} ago, Held ${timer(ent.heldfor, true)}`: `- Lost - ${ent.territory}\n- To ${ent.o_guild.name} [${ent.o_guild.prefix}]\n- ${timer(ent.time, false, true)} ago, Held for ${timer(ent.heldfor, true)}`)
+        //pahe 4 terr history
+        const terr_data = await getGuildFromDB(res.data.uuid)
+        const g_ter = terr_data.sort((a, b) => b.Time - a.Time).map(ent=>`${ent.GuildUUID==dat.uuid.replace(/-/g, '')? 
+            `+ Took (${ent.GuildTotal-1} > ${ent.GuildTotal}) ${ent.Territory}\n+ From ${ent.PreviousGuildName} [${ent.PreviousGuildPrefix}] (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal})\n+ Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`: 
+            `- Lost (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal}) ${ent.Territory}\n- To ${ent.GuildName} [${ent.GuildPrefix}] (${ent.GuildTotal-1} > ${ent.GuildTotal})\n- Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`
+        }`)
         const embed4 = new EmbedBuilder()
            .setTitle(`${dat.prefix} War logs:`)
            .setFooter({text: `${ulang.page} 4 / 5 - ${ulang.req_took} ${new Date().getTime()-st_time}ms`})
