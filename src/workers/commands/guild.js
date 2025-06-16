@@ -108,8 +108,8 @@ async function guild(interaction) {
         //pahe 4 terr history
         const terr_data = await getGuildFromDB(res.data.uuid)
         const g_ter = terr_data.map(ent=>`${ent.GuildUUID==dat.uuid.replace(/-/g, '')? 
-            `+ Took (${ent.GuildTotal-1} > ${ent.GuildTotal}) ${ent.Territory}\n+ From ${ent.PreviousGuildName} [${ent.PreviousGuildPrefix}] (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal})\n+ Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`: 
-            `- Lost (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal}) ${ent.Territory}\n- To ${ent.GuildName} [${ent.GuildPrefix}] (${ent.GuildTotal-1} > ${ent.GuildTotal})\n- Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`
+            `+ (${ent.GuildTotal-1} > ${ent.GuildTotal}) ${ent.Territory}\n+ From [${ent.PreviousGuildPrefix}] (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal})\n+ Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`: 
+            `- (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal}) ${ent.Territory}\n- To [${ent.GuildPrefix}] (${ent.GuildTotal-1} > ${ent.GuildTotal})\n- Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`
         }`)
         const embed4 = new EmbedBuilder()
            .setTitle(`${dat.prefix} War logs:`)
@@ -146,6 +146,7 @@ async function guild(interaction) {
         }, 600000);
         return { embeds: [embed1], components: [row]}
     }).catch(async (e)=>{
+        console.log(e)
         const embed = new EmbedBuilder()
         .setTitle(`${ulang.err}`)
         .setDescription(`\`\`\`js\n${e.stack.split('\n')[0]}\`\`\``)
