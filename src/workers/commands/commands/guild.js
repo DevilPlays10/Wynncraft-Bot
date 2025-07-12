@@ -1,4 +1,4 @@
-const { getLang, data, axios } = require('../../index.js')
+const { getLang, data, axios } = require('../../../index.js')
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
 const sqlite3 = require('sqlite3').verbose()
 
