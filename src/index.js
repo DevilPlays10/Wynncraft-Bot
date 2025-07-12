@@ -9,7 +9,7 @@ const client = new Client({
   ],
 });
 const axios = require('axios')
-axios.defaults.timeout = 2500
+axios.defaults.timeout = 5000
 
 const data = {
   storage: "src\\storage",
@@ -26,10 +26,10 @@ client.login(tokens.disc_token)
 module.exports = { tokens, data, client, updateVariable, getLang, axios, send }
 
 client.once('ready', async (c) => {
-  require('./workers/handler.js')(client)
+  require('./workers/commands/handler.js')(client)
   require('./workers/process/war_logger.js')
   data.user = c.user
-  console.log(await require('./workers/register.js')?? "Successfuly registered commands")
+  console.log(await require('./workers/commands/register.js')?? "Successfuly registered commands")
 });
 
 function updateVariable(route, key, newValue) {
