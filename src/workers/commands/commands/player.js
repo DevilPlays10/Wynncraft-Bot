@@ -1,5 +1,5 @@
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder} = require('discord.js')
-const { data, getLang, axios} = require('../../index.js')
+const { data, getLang, axios} = require('../../../index.js')
 
 const ints = {}
 

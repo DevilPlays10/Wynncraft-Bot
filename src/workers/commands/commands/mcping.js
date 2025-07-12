@@ -1,4 +1,4 @@
-const { data, getLang, axios } = require('../../index.js')
+const { data, getLang, axios } = require('../../../index.js')
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js')
 
 module.exports = (async (interaction) => {

@@ -13,25 +13,20 @@ const commands = [
         choices: [
           { name: 'Wynncraft', value: 1 },
           { name: 'BFS Special', value: 2},
-          { name: 'Furry', value: 3 },
+          { name: 'Furry/Cosplay', value: 3 },
           { name: 'Femboy', value: 4 },
           { name: 'Boykisser', value: 5 },
           { name: 'Animals', value: 6 },
           { name: 'Racist', value: 7 },
           { name: 'NSFW', value: 8 },
+          { name: 'Misc', value: 9 }
         ],
         required: true
-      }, 
-      {
-        name: 'id',
-        description: 'Numeric ID to search for a specific gif',
-        type: ApplicationCommandOptionType.Integer,
-        required: false
       },
       {
         name: 'attach',
-        description: 'Used to submit a speechbubble, Dev only',
-        type: ApplicationCommandOptionType.Attachment,
+        description: 'Used to submit a speechbubble, discordLink to download, DEV ONLY',
+        type: ApplicationCommandOptionType.String,
         required: false
       }
     ]

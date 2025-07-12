@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js')
 const start_time = new Date().getTime()
-const { data, getLang } = require('../../index.js')
+const { data, getLang } = require('../../../index.js')
 
 module.exports = async (interaction) => {
     const ulang = getLang(interaction)

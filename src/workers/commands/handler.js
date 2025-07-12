@@ -1,8 +1,8 @@
-const cmd_mcping = require('./mcping.js')
-const cmd_latency = require('./latency.js')
-const cmd_player = require('./player.js')
+const cmd_mcping = require('./commands/mcping.js')
+const cmd_latency = require('./commands/latency.js')
+const cmd_player = require('./commands/player.js')
 const cmd_guild = require('./commands/guild.js')
-const cmd_war_tracker = require('./territory_tracker.js')
+const cmd_war_tracker = require('./commands/territory_tracker.js')
 const cmd_bubble = require('./commands/bubble.js')
 
 const cmd = {
