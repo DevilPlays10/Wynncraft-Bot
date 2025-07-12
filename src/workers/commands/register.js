@@ -1,7 +1,41 @@
 const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
-const { data, tokens: {disc_token: token} } = require('../index.js')
+const { data, tokens: {disc_token: token} } = require('../../index.js')
 
 const commands = [
+  {
+    name: 'bubble',
+    description: 'Get a random speechbubble',
+    options: [
+      {
+        name: 'type',
+        description: 'Type of speechbubble',
+        type: ApplicationCommandOptionType.Integer,
+        choices: [
+          { name: 'Wynncraft', value: 1 },
+          { name: 'BFS Special', value: 2},
+          { name: 'Furry', value: 3 },
+          { name: 'Femboy', value: 4 },
+          { name: 'Boykisser', value: 5 },
+          { name: 'Animals', value: 6 },
+          { name: 'Racist', value: 7 },
+          { name: 'NSFW', value: 8 },
+        ],
+        required: true
+      }, 
+      {
+        name: 'id',
+        description: 'Numeric ID to search for a specific gif',
+        type: ApplicationCommandOptionType.Integer,
+        required: false
+      },
+      {
+        name: 'attach',
+        description: 'Used to submit a speechbubble, Dev only',
+        type: ApplicationCommandOptionType.Attachment,
+        required: false
+      }
+    ]
+  },
   {
     name: 'territory_add',
     description: 'Add territory tracker',
