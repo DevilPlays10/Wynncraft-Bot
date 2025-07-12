@@ -12,7 +12,7 @@ const axios = require('axios')
 axios.defaults.timeout = 5000
 
 const data = {
-  storage: "src\\storage",
+  storage: "src/storage",
   urls: {
     mcpingurl: "https://api.mcstatus.io/v2/status/",
     wyn: "https://api.wynncraft.com/v3/"
