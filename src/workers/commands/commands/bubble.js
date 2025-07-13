@@ -5,15 +5,17 @@ const fs = require('fs');
 
 // { name: 'Wynncraft', value: 1 },
 // { name: 'BFS Special', value: 2},
-// { name: 'Furry', value: 3 },
-// { name: 'Femboy', value: 4 },
-// { name: 'Boykisser', value: 5 },
-// { name: 'Animals', value: 6 },
-// { name: 'Racist', value: 7 },
-// { name: 'NSFW', value: 8 },
-// { name: 'Misc', value: 9}
+// { name: 'Discord', value: 3 },
+// { name: 'Furry/Cosplay', value: 4 },
+// { name: 'Femboy/LGBT', value: 5 },
+// { name: 'Self-Degradation', value: 6 },
+// { name: 'Boykisser', value: 7 },
+// { name: 'Animals', value: 8 },
+// { name: 'Racist', value: 9 },
+// { name: 'NSFW', value: 10 },
+// { name: 'Misc', value: 11 }
 
-const submit_allow_users = [ "787924220184625193" ]
+const submit_allow_users = [ "787924220184625193", "340439996857188352" ]
 
 module.exports = (async (int) => {
     await int.deferReply()
@@ -33,6 +35,7 @@ module.exports = (async (int) => {
             ]}
         })
         .catch(ent=>{
+            console.log(ent)
             return { embeds: [
                 new EmbedBuilder()
                 .setTitle('An error occured')
@@ -43,7 +46,7 @@ module.exports = (async (int) => {
             ]}
         })
     }
-    if (type==8 && !int.channel.nsfw) return `Sorry! this type can only be used in an NSFW Channel`
+    if ([10, 9].includes(type)&& !int.channel.nsfw) return `Sorry! this type can only be used in an NSFW Channel`
     const gifs = fs.readdirSync(`${data.storage}/bubbles/${type}`)
     if (!gifs.length) return `An Error occured! :( No gifs were found in this catagory`
     const randoPath = `${data.storage}/bubbles/${type}/` + gifs[Math.floor(Math.random() * gifs.length)]
@@ -75,7 +78,8 @@ async function download(link, type) {
 
     if (existingHash === newHash) throw new Error('Same hashData already exists');
   }
-  const finalName = `${folderPath}/${existingFiles.length}.gif`
+  const _name = `${folderPath}/${existingFiles.length}.gif`
+  const finalName = existingFiles.includes(_name)? '_'+_name:_name
 
   fs.writeFileSync(finalName, buffer);
 
