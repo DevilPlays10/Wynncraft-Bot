@@ -13,13 +13,15 @@ const commands = [
         choices: [
           { name: 'Wynncraft', value: 1 },
           { name: 'BFS Special', value: 2},
-          { name: 'Furry/Cosplay', value: 3 },
-          { name: 'Femboy', value: 4 },
-          { name: 'Boykisser', value: 5 },
-          { name: 'Animals', value: 6 },
-          { name: 'Racist', value: 7 },
-          { name: 'NSFW', value: 8 },
-          { name: 'Misc', value: 9 }
+          { name: 'Discord', value: 3 },
+          { name: 'Furry/Cosplay', value: 4 },
+          { name: 'Femboy/LGBT', value: 5 },
+          { name: 'Self-Degradation', value: 6 },
+          { name: 'Boykisser', value: 7 },
+          { name: 'Animals', value: 8 },
+          { name: 'Racist', value: 9 },
+          { name: 'NSFW', value: 10 },
+          { name: 'Misc', value: 11 }
         ],
         required: true
       },
