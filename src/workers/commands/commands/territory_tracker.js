@@ -11,9 +11,7 @@ async function Add(int) {
     const terr = int.options.getString('territory')
     const terrData = JSON.parse(fs.readFileSync(data.storage + "/process/terr_track.json"))
     const [{data: terrList}, {data:guildList}] = [JSON.parse(fs.readFileSync(data.storage + "/process/autocomplete/territories.json")), JSON.parse(fs.readFileSync(data.storage + "/process/autocomplete/guilds.json"))]
-    console.log(terrData)
     const guildSelect = guild=='<global>'? '<global>': guildList.filter(ent=>ent[0].split(' - ')[0].trim()==guild.trim()).map(ent=>{return{name: ent[0].split(' - ')[0],tag: ent[0].split(' - ')[1], uuid: ent[1]}})[0]
-    console.log(guildSelect)
     if (!guildSelect) return {content: 'Invalid guild, Please select a correct option'}
     const uuidOrGlobal = guildSelect.uuid??guildSelect
     if (!terrList.includes(terr)&&terr!=='<global>') return {content: 'Invalid territory name, Please select a correct option'}
