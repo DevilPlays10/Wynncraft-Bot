@@ -10,7 +10,8 @@ async function guild(interaction) {
         withResponse: true
     })
     const ulang = getLang(interaction)
-    let guild = interaction.options.getString('name')
+    let guild = interaction.options.getString('name').trim()
+    console.log(guild)
     const regx = guild.match(/[^A-Za-z ]/g)
     if (regx) return { embeds: [new EmbedBuilder().setTitle(`${ulang.err}`).setDescription(`${ulang.g_cause}\n[${regx.join(", ")}]`).setFooter({text: `${ulang.req_took} ${new Date().getTime()-st_time}ms`}).setTimestamp()]}
     let prefix = false
@@ -92,9 +93,7 @@ async function guild(interaction) {
         }
         //pahe 4 terr history
         const uuid = res.data.uuid.replace(/-/g, '');
-        console.log(uuid)
         const terr_data = await db.all(`SELECT * FROM Territories WHERE GuildUUID = ? OR PreviousGuildUUID = ? ORDER BY Time DESC LIMIT 20`, [uuid, uuid])
-        console.log(terr_data)
         const g_ter = terr_data.map(ent=>`${ent.GuildUUID==dat.uuid.replace(/-/g, '')? 
             `+ (${ent.GuildTotal-1} > ${ent.GuildTotal}) ${ent.Territory}\n+ From [${ent.PreviousGuildPrefix}] (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal})\n+ Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`: 
             `- (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal}) ${ent.Territory}\n- To [${ent.GuildPrefix}] (${ent.GuildTotal-1} > ${ent.GuildTotal})\n- Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`
