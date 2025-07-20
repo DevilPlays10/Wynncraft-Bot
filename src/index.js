@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits} = require('discord.js');
+const { Client, GatewayIntentBits, Partials} = require('discord.js');
 const fs = require('fs')
 const client = new Client({ 
   intents: [
@@ -6,8 +6,11 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.DirectMessages,
   ],
+  partials: [Partials.Channel]
 });
+
 const axios = require('axios')
 axios.defaults.timeout = 5000
 
@@ -18,17 +21,20 @@ const data = {
     wyn: "https://api.wynncraft.com/v3/"
   },
   user: null, //do not change, changes automatically after once event
+  started: new Date()
 }
 
 const tokens = JSON.parse(fs.readFileSync(data.storage+"/tokens.json"))
 client.login(tokens.disc_token)
 
-module.exports = { tokens, data, client, updateVariable, getLang, axios, send }
+module.exports = { tokens, data, client, updateVariable, getLang, axios, send, log_str }
 
 client.once('ready', async (c) => {
+  log_str('[MAIN] Initialized')
+  data.user = c.user
   require('./workers/commands/handler.js')(client)
   require('./workers/process/war_logger.js')
-  data.user = c.user
+  require('./workers/process/scheduler.js')
   console.log(await require('./workers/commands/register.js')?? "Successfuly registered commands")
 });
 
@@ -56,4 +62,9 @@ async function send(id, data) {
   } catch(e)  {
     return e
   }
+}
+
+function log_str(message) {
+  const timestamp = new Date().toISOString();
+  fs.appendFileSync(`${data.storage}/logs/${new Date(data.started).getTime()}.log`, `[${timestamp}] ${message}\n`);
 }
