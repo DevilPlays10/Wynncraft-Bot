@@ -1,5 +1,4 @@
 const { EmbedBuilder } = require('discord.js')
-const start_time = new Date().getTime()
 const { data, getLang } = require('../../../index.js')
 
 module.exports = async (interaction) => {
@@ -11,7 +10,7 @@ module.exports = async (interaction) => {
             new EmbedBuilder()
             .setTitle("Pong!")
             .setThumbnail(data.user.displayAvatarURL({ size: 1024 }))
-            .setDescription(`${ulang.req_took} \`${new Date().getTime()-cmd_time}ms\`\n${ulang.uptime}: \`${timer(start_time)}\``)
+            .setDescription(`${ulang.req_took} \`${new Date().getTime()-cmd_time}ms\`\n${ulang.uptime}: \`${timer(data.started)}\``)
             .setTimestamp()
         ]
     }
