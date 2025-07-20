@@ -1,57 +1,58 @@
-const { updateVariable, getLang, data, axios, send } = require('../../../index.js')
+const { updateVariable, getLang, data, axios, send, client } = require('../../../index.js')
 const { EmbedBuilder, PermissionsBitField, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder } = require('discord.js')
 const fs = require('fs')
 
 const intData = {}
 
 async function Add(int) {
-    const st_time = new Date()
     await int.deferReply()
-    if (!int.guildId) return {content: "Sorry! You cannot use this command in a DM"}
-    if (!int.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) return {content: "Sorry! You must have `ManageServer` permission to use this command"}
+    const st_time = new Date()
     const guild = int.options.getString('guild')
-    const {terr: track} = JSON.parse(fs.readFileSync(data.storage+"/process/tracker_data.json"))
-    if (!track[int.guildId]) track[int.guildId] = {
-        lang: int.guildLocale,
-        data: {}
-    }
-    if (Object.values(track[int.guildId].data).length==5) return {content: 'Sorry! You can only have a maximum of 5 territory trackers in this server'}
-    if (guild.toLowerCase() == "<global>") {
-        if (track[int.guildId].data["<global>"]) return {content: "This server already has a global territory tracker"}
-        const msg = await send(int.channelId, {content: `Global Territory tracker added to this channel by <@${int.user.id}>`})
-        if (!msg.id) return {content: "An Error occured when sending a message to this channel\nThis is likely due to missing permissions, Please make sure I have `SendMessages`, `SendEmbeds` permissions"}
-        track[int.guildId].data["<global>"] = int.channelId
-        updateVariable(data.storage+"/process/tracker_data.json", 'terr', track)
-        return { embeds: [
+    const terr = int.options.getString('territory')
+    const terrData = JSON.parse(fs.readFileSync(data.storage + "/process/terr_track.json"))
+    const [{data: terrList}, {data:guildList}] = [JSON.parse(fs.readFileSync(data.storage + "/process/autocomplete/territories.json")), JSON.parse(fs.readFileSync(data.storage + "/process/autocomplete/guilds.json"))]
+    console.log(terrData)
+    const guildSelect = guild=='<global>'? '<global>': guildList.filter(ent=>ent[0].split(' - ')[0].trim()==guild.trim()).map(ent=>{return{name: ent[0].split(' - ')[0],tag: ent[0].split(' - ')[1], uuid: ent[1]}})[0]
+    console.log(guildSelect)
+    if (!guildSelect) return {content: 'Invalid guild, Please select a correct option'}
+    const uuidOrGlobal = guildSelect.uuid??guildSelect
+    if (!terrList.includes(terr)&&terr!=='<global>') return {content: 'Invalid territory name, Please select a correct option'}
+    if (int.guildId) {
+        if (!int.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) return {content: "Sorry! You must have `ManageServer` permission to use this command"}
+        if (terrData.server[int.guildId]?.length>10) return {content: "Sorry! This server has reached its maximum amount of trackers, Please delete unused ones first"}
+        if (!terrData.server[int.guildId]) terrData.server[int.guildId] = []
+        if (terrData.server[int.guildId].filter(ent=>ent.terr==terr&&ent.guild==uuidOrGlobal).length) return {content: `Sorry! A tracker for Guild: \`${guildSelect.name??guildSelect}\` Territory: \`${terr}\` already exists, Remove it using \`/territory_remove\` first`}
+        const msg = await send(int.channelId, {content: `Territory tracker for Guild: \`${guildSelect.name??guildSelect}\`, Territory: \`${terr}\` added to this channel by <@${int.user.id}>`})
+        if (!msg.id) return {content: `Missing permissions to send messages to this channel, Please make sure i have \`SendMessages\`, \`EmbedMessages\` permission`}
+        terrData.server[int.guildId].push({
+            terr, channel: int.channelId, guild: uuidOrGlobal, name: guildSelect.name??guildSelect
+        })
+        updateVariable(data.storage + "/process/terr_track.json", 'server', terrData.server)
+        return {embeds: [
             new EmbedBuilder()
-            .setTitle(`Global Territory tracker added`)
-            .setDescription(`Any territory changes will be logged to this channel`)
+            .setTitle(`Territory Tracker added`)
+            .setDescription(`Guild: \`${guildSelect.name? `${guildSelect.name} (${guildSelect.tag})`: `${guildSelect}`}\`\nTerritory: \`${terr}\`\n\nAny changes will be logged to this channel`)
             .setColor(0x7DDA58)
             .setFooter({text: `Request took: ${new Date()-st_time}ms`})
         ]}
     } else {
-        return await axios.get(data.urls.wyn+`guild/${encodeURI(guild)}`).then(async (res)=>{
-            if (track[int.guildId].data[res.data.uuid]) throw new Error("This server already has a territory tracker for this guild\nPlease delete the previous one first")
-            const msg = await send(int.channelId, {content: `Territory tracker for \`${res.data.name}\` added to this channel by <@${int.user.id}>`})
-            if (!msg.id) return {content: "An Error occured when sending a message to this channel\nThis is likely due to missing permissions, Please make sure I have `SendMessages`, `SendEmbeds` permissions "}
-            track[int.guildId].data[res.data.uuid] = int.channelId
-            updateVariable(data.storage+"/process/tracker_data.json", 'terr', track)
-            return {embeds: [
-                new EmbedBuilder()
-                .setTitle(`Tracker added for ${res.data.name}`)
-                .setDescription(`\nName: \`${res.data.name}\`\nPrefix: \`${res.data.prefix}\`\nUUID: \`${res.data.uuid}\`\n\nAny territory changes will be logged to this channel`)
-                .setColor(0x7DDA58)
-                .setFooter({text: `Request took: ${new Date()-st_time}ms`})
-            ]}
-        }).catch(e=>{
-            return {embeds: [
-                new EmbedBuilder()
-                .setTitle(`Error occured`)
-                .setDescription(`An error occured :(\n\`\`\`\n${e.message}\`\`\``)
-                .setColor(0xE4080A)
-                .setFooter({text: `Request took: ${new Date()-st_time}ms`})
-            ]}
+        if (terrData.user[int.user.id]?.length>10) return {content: "Sorry! You have reached the maximum amount of trackers, Please delete unused ones first"}
+        if (!terrData.user[int.user.id]) terrData.user[int.user.id] = []
+        if (terrData.user[int.user.id].filter(ent=>ent.terr==terr&&ent.guild==(guildSelect.uuid??guildSelect)).length) return {content: `Sorry! A tracker for Guild: \`${guildSelect.name??guildSelect}\` Territory: \`${terr}\` already exists, Remove it using \`/territory_remove\` first`}
+        const user = await client.users.fetch(int.user.id)
+        const msg = await user.send({content: `Territory tracker for Guild: \`${guildSelect.name??guildSelect}\`, Territory: \`${terr}\` added to this DM`})
+        if (!msg.id) return {content: `Failed to setup tracker, this may be due to your discord settings or you have blocked me :(`}
+        terrData.user[int.user.id].push({
+            terr, guild: uuidOrGlobal, name: guildSelect.name??guildSelect
         })
+        updateVariable(data.storage + "/process/terr_track.json", 'user', terrData.user)
+        return {embeds: [
+            new EmbedBuilder()
+            .setTitle(`Territory Tracker added`)
+            .setDescription(`Guild: \`${guildSelect.name? `${guildSelect.name} (${guildSelect.tag})`: `${guildSelect}`}\`\nTerritory: \`${terr}\`\n\nAny changes will be logged to this DM`)
+            .setColor(0x7DDA58)
+            .setFooter({text: `Request took: ${new Date()-st_time}ms`})
+        ]}
     }
 }
 
@@ -59,49 +60,85 @@ async function Remove(int) {
     const msg = await int.deferReply({
         withResponse: true
     })
-    if (!int.guildId) return {content: "Sorry! You cannot use this command in a DM"}
-    if (!int.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) return {content: "Sorry! You must have `ManageServer` permission to use this command"}
-    const {terr: track} = JSON.parse(fs.readFileSync(data.storage+"/process/tracker_data.json"))
-    if (!track[int.guildId]) return {content: "This server has no active trackers"}
-    intData[msg.resource.message.id] = true
-    const stringmenu = new StringSelectMenuBuilder()
+    const track = JSON.parse(fs.readFileSync(data.storage+"/process/terr_track.json"))
+    if (int.guildId) {
+        if (!int.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) return "Sorry! You must have `ManageServer` permission to use this command"
+        if (!track.server[int.guildId]) return `This server has no active territory trackers, Add one using \`/territory_add\``
+        return removalString(Object.values(track.server[int.guildId]).map(ent=>new StringSelectMenuOptionBuilder().setLabel(`${(ent.terr).slice(0, 25)} - ${ent.name}`).setValue(`${ent.guild};${ent.terr}`)))
+    } else {
+        if (!track.user[int.user.id]) return `You have no personal territory trackers active, Add one using \`/territory_add\``
+        return removalString(Object.values(track.user[int.user.id]).map(ent=>new StringSelectMenuOptionBuilder().setLabel(`${(ent.terr).slice(0, 25)} - ${ent.name}`).setValue(`${ent.guild};${ent.terr}`)))
+    }
+    function removalString(data) {
+        intData[msg.resource.message.id] = true
+        const stringmenu = new StringSelectMenuBuilder()
             .setCustomId('war_tracker_remove_MENU')
-			.setPlaceholder('Select a tracker')
-			.addOptions(Object.entries(track[int.guildId].data).map(ent=>new StringSelectMenuOptionBuilder().setLabel(`${ent[0]} - ${ent[1]}`).setValue(ent[0])))
-            setTimeout(async () => {
-                delete intData[msg.resource.message.id]
-                await int.editReply({components: []})
-            }, 300000);
-    return {embeds: [
-        new EmbedBuilder()
-        .setTitle('Remove a tracker')
-        .setDescription('Please select the tracker you want to remove')
-        .setThumbnail()
-    ], components: [
-        new ActionRowBuilder().addComponents(stringmenu)
-    ]}
+			.setPlaceholder('Select a tracker to remove')
+			.addOptions(data)
+        setTimeout(() => {
+            delete intData[msg.resource.message.id]
+            int.editReply({components: []})
+        }, 300000);
+        return {embeds: [
+            new EmbedBuilder()
+            .setTitle('Remove a tracker')
+            .setDescription('Please select the tracker you want to remove')
+        ], components: [
+            new ActionRowBuilder().addComponents(stringmenu)
+        ]}
+    }
 }
 
 async function menu(int) {  
     await int.deferReply({flags: 64})
     if (!intData[int.message.id]) {
         await int.message.delete()
-        await int.deferReply({content: "Unknown Interaction"})
+        await int.editReply({content: "Interaction Expired, Please re-use the command"})
         return
     }
-    if (!int.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
-        await int.editReply({content: "Sorry! You must have `ManageServer` permission to use this command"})
-        return
+    const track = JSON.parse(fs.readFileSync(data.storage+"/process/terr_track.json"))
+    const [ guuid, terr ] = int.values[0].split(';')
+    if (int.guildId) {
+        if (!int.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+            await int.editReply("Sorry! You must have `ManageServer` permission to use this command")
+            return
+        }
+        if (!track.server[int.guildId].filter(ent=>ent.guild==guuid&&ent.terr==terr)) {
+            await int.message.edit({components: [genStringMenu(Object.values(track.server[int.guildId]).map(ent=>new StringSelectMenuOptionBuilder().setLabel(`${(ent.terr).slice(0, 25)} - ${ent.name}`).setValue(`${ent.guild};${ent.terr}`)))]})
+            await int.editReply('This tracker does not exist or was already removed')
+            return
+        }
+        const restTrackers = track.server[int.guildId].filter(ent=>!(ent.guild===guuid&&ent.terr===terr))
+        track.server[int.guildId] = restTrackers
+        if (!restTrackers.length) {
+            delete track.server[int.guildId]
+            delete intData[int.message.id]
+        }
+        await int.message.edit({components: track.server[int.guildId]? [genStringMenu(Object.values(track.server[int.guildId]).map(ent=>new StringSelectMenuOptionBuilder().setLabel(`${(ent.terr).slice(0, 25)} - ${ent.name}`).setValue(`${ent.guild};${ent.terr}`)))]: []})
+        await int.editReply(`Successfully removed the tracker \`${guuid}\` - ${terr}`)
+        updateVariable(data.storage+"/process/terr_track.json", 'server', track.server)
+    } else {
+        if (!track.user[int.user.id].filter(ent=>ent.guild==guuid&&ent.terr==terr)) {
+            await int.message.edit({components: [genStringMenu(Object.values(track.user[int.user.id]).map(ent=>new StringSelectMenuOptionBuilder().setLabel(`${(ent.terr).slice(0, 25)} - ${ent.name}`).setValue(`${ent.guild};${ent.terr}`)))]})
+            await int.editReply('This tracker does not exist or was already removed')
+            return
+        }
+        const restTrackers = track.user[int.user.id].filter(ent=>!(ent.guild===guuid&&ent.terr===terr))
+        track.user[int.user.id] = restTrackers
+        if (!restTrackers.length) {
+            delete track.user[int.user.id]
+            delete intData[int.message.id]
+        }
+        await int.message.edit({components: track.user[int.user.id]? [genStringMenu(Object.values(track.user[int.user.id]).map(ent=>new StringSelectMenuOptionBuilder().setLabel(`${(ent.terr).slice(0, 25)} - ${ent.name}`).setValue(`${ent.guild};${ent.terr}`)))]: []})
+        await int.editReply(`Successfully removed the tracker \`${guuid}\` - ${terr}`)
+        updateVariable(data.storage+"/process/terr_track.json", 'user', track.user)
     }
-    const {terr: track} = JSON.parse(fs.readFileSync(data.storage+"/process/tracker_data.json"))
-    if (!track[int.guildId]?.data[int.values[0]]) {
-        await int.editReply({content: "This tracker doesnt exist or has already been deleted"})
-        return
+    function genStringMenu(data) {
+        return new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
+            .setCustomId('war_tracker_remove_MENU')
+			.setPlaceholder('Select a tracker to remove')
+			.addOptions(data))
     }
-    delete track[int.guildId].data[int.values[0]]
-    if (!Object.values(track[int.guildId].data).length) delete track[int.guildId]
-    updateVariable(data.storage+"/process/tracker_data.json", 'terr', track)
-    await int.editReply({content: `Successfully deleted tracker for \`${int.values[0]}\``})
 } 
 
 module.exports = {Add, Remove, menu}
