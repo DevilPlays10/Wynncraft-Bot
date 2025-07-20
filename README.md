@@ -14,8 +14,12 @@ General Purpose DiscordBot made for messing around with random API's
 - `/latency` displays bot's uptime and latency
 
 ## TODO
+
+## Done
 - stella wants a command that pigns him when a terirtory is taken
 - add a type field to territory_add command that when used will change its behaviour, user can select the guild or global and then the territory they want to recieve notifs for and then additional conditions on when to recieve them like discord status
+- add logs
+- add auto complete for all commands compatiable
 
 > [!NOTE]
 > This Bot a fun project and not meant to be for full use, There will be small goofy features but feel free to leave suggestions
