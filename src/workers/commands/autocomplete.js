@@ -22,7 +22,7 @@ async function Guilds(int) {
     const finalArr = guilds.filter(ent=>ent[0].toLowerCase().startsWith(opt.value.toLowerCase())||ent[0].toLowerCase().endsWith(opt.value.toLowerCase())).slice(0, 25).map(ent=>{
         return {
         name: ent[0],
-        value: ent[0].split('-')[0]
+        value: ent[0].split(' - ')[0]
     }})
     if (extraOptions[`${int.commandName}-${opt.name}`]) {
         int.respond([...extraOptions[`${int.commandName}-${opt.name}`], ...finalArr].slice(0, 25))
