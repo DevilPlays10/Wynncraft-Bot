@@ -39,9 +39,17 @@ const commands = [
     options: [
       {
         name: 'guild',
-        description: 'Name of guild, use <GLOBAL> for all territory changes',
+        description: 'Name of guild, use <GLOBAL> for all guilds',
         type: ApplicationCommandOptionType.String,
-        required: true
+        required: true,
+        autocomplete: true,
+      },
+      {
+        name: 'territory',
+        description: 'Territories to log changes of, use <GLOBAL> for all territories',
+        type: ApplicationCommandOptionType.String,
+        required: true,
+        autocomplete: true
       }
     ]
   },
@@ -102,6 +110,7 @@ const commands = [
         description: 'Prefix or name of the guild',
         type: ApplicationCommandOptionType.String,
         required: true,
+        autocomplete: true
       }
     ],
   },
