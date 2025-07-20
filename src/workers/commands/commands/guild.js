@@ -1,23 +1,8 @@
 const { getLang, data, axios } = require('../../../index.js')
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
-const sqlite3 = require('sqlite3').verbose()
+const { db } = require('../../process/db.js')
 
 const ints = {}
-
-function getGuildFromDB(guildUUID) {
-    return new Promise((resolve, reject) => {
-        const db = new sqlite3.Database(`${data.storage}/process/territory.db`, (err) => {
-            if (err) return reject(err);
-        });
-
-        const uuid = guildUUID.replace(/-/g, '');
-        db.all(`SELECT * FROM Territories WHERE GuildUUID = ? OR PreviousGuildUUID = ? ORDER BY Time DESC LIMIT 20`, [uuid, uuid], (err, rows) => {
-            db.close(); // close inside the callback
-            if (err) return reject(err);
-            resolve(rows);
-        });
-    });
-}
 
 async function guild(interaction) {
     const st_time = new Date().getTime()
@@ -57,7 +42,7 @@ async function guild(interaction) {
                 })
             }
         }
-        const terrlist = await axios.get(`${data.urls.wyn}guild/list/territory`).catch(e=>{ return e})
+        const terrlist = await axios.get(`${data.urls.wyn}guild/list/territory`).catch(e=>e)
         const made_date = new Date(dat.created)
         //page 1
         const on_list = mlist.filter(ent=>ent.online).map(ent=>`[${ent.rank.toUpperCase()}] ${ent.name} (${ent.server})`)
@@ -106,7 +91,10 @@ async function guild(interaction) {
             }
         }
         //pahe 4 terr history
-        const terr_data = await getGuildFromDB(res.data.uuid)
+        const uuid = res.data.uuid.replace(/-/g, '');
+        console.log(uuid)
+        const terr_data = await db.all(`SELECT * FROM Territories WHERE GuildUUID = ? OR PreviousGuildUUID = ? ORDER BY Time DESC LIMIT 20`, [uuid, uuid])
+        console.log(terr_data)
         const g_ter = terr_data.map(ent=>`${ent.GuildUUID==dat.uuid.replace(/-/g, '')? 
             `+ (${ent.GuildTotal-1} > ${ent.GuildTotal}) ${ent.Territory}\n+ From [${ent.PreviousGuildPrefix}] (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal})\n+ Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`: 
             `- (${ent.PreviousGuildTotal+1} > ${ent.PreviousGuildTotal}) ${ent.Territory}\n- To [${ent.GuildPrefix}] (${ent.GuildTotal-1} > ${ent.GuildTotal})\n- Held ${timer(ent.Held_For*1000, true)} - ${timer(ent.Time*1000)} ago`
