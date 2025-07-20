@@ -1,8 +1,8 @@
 const axios = require('axios')
-const { data: config, updateVariable, send } = require('../../index.js')
+const { data: config, send, client } = require('../../index.js')
 const fs = require('fs')
 const { EmbedBuilder } = require('discord.js')
-const sqlite3 = require('sqlite3').verbose()
+const { db } = require('../process/db.js')
 
 let obj = {}
 
@@ -33,35 +33,9 @@ async function call(){
                     logdisc(out)
                 }
             }
-            DBUpdate(pushtoDB)
-            obj=res.data
-        } else obj = res.data
-    }).catch(e=>{
-        console.log(e)
-    })
-}
-
-let updateList = []
-/**
- * Adds an array to territory DB
- * @param {*} data array of data to add into territory DB
- */
-function DBUpdate(data) {
-    updateList.push(...data);
-    if (!updateList?.length) return;
-
-    try {
-        const db = new sqlite3.Database(`${config.storage}/process/territory.db`, (err) => {
-            if (err) {
-                console.error('Database connection error:', err);
-                return;
-            }
-            for (const d of data) {
-                db.run(
-                    `INSERT INTO Territories 
-                    (Held_For, Time, Territory, GuildUUID, GuildName, GuildPrefix, GuildTotal, PreviousGuildUUID, PreviousGuildName, PreviousGuildPrefix, PreviousGuildTotal)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [
+            if (pushtoDB.length) db.run_each(`INSERT INTO Territories 
+                (Held_For, Time, Territory, GuildUUID, GuildName, GuildPrefix, GuildTotal, PreviousGuildUUID, PreviousGuildName, PreviousGuildPrefix, PreviousGuildTotal)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, pushtoDB.map(d=>[
                         d.timeHeld,
                         Math.floor(new Date().getTime() / 1000),
                         d.terr,
@@ -73,52 +47,80 @@ function DBUpdate(data) {
                         d.prev_holder.name,
                         d.prev_holder.prefix,
                         d.prev_holder_total
-                    ],
-                    (err) => {
-                        if (err) console.error('Insert error:', err);
-                    }
-                );
-            }
-            db.close((err) => {
-                if (err) console.error('Error closing DB:', err);
-            });
-        });
+                    ]))
+            obj=res.data
+        } else obj = res.data
+    }).catch(e=>{
+        console.log(e)
+    })
+}
 
-        updateList = [];
-    } catch (e) {
-        console.error('Unexpected error:', e);
+let UserData = {}
+async function AddUsers(users) {
+    for (const id of users) {
+        if (UserData[id]) return
+        UserData[id] = await client.users.fetch(id)
+    }
+    for (const id of Object.getOwnPropertyNames(UserData)) {
+        if (!users.includes(id)) delete UserData[id]
     }
 }
 
 async function logdisc(arg) {
-    const {terr:track} = JSON.parse(fs.readFileSync(config.storage+"/process/tracker_data.json"))
-    for (guild_data of Object.values(track)) {
-        for (channel of Object.entries(guild_data.data)) {
-            if (channel[0]=="<global>") {
-                await send(channel[1], {embeds: [
-                    new EmbedBuilder()
-                    .setTitle(':golf: Territory Captured')
-                    .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} (${arg.prev_holder_total+1} > ${arg.prev_holder_total}) --> **${arg.capturer.name}** (${arg.capturer_total-1} > ${arg.capturer_total})`)
-                    .setColor(0x2596be)
-                    .setTimestamp()
-                ]})
-            } else if (channel[0]==arg.capturer.uuid) {
-                await send(channel[1], {embeds: [
-                    new EmbedBuilder()
-                    .setTitle(':green_circle: Territory Captured')
-                    .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} (${arg.prev_holder_total+1} > ${arg.prev_holder_total}) --> **${arg.capturer.name}** (${arg.capturer_total-1} > ${arg.capturer_total})`)
-                    .setColor(0x7DDA58)
-                    .setTimestamp()
-                ]})
-            } else if (channel[0]==arg.prev_holder.uuid) {
-                await send(channel[1], {embeds: [
-                    new EmbedBuilder()
-                    .setTitle(':red_circle: Territory Lost')
-                    .setDescription(`**${arg.terr}**\n**${arg.prev_holder.name}** (${arg.prev_holder_total+1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} (${arg.capturer_total-1} > ${arg.capturer_total})`)
-                    .setColor(0xE4080A)
-                    .setTimestamp()
-                ]})
-            }
+    const track = JSON.parse(fs.readFileSync(config.storage+"/process/terr_track.json"))
+    for (const guild of Object.values(track.server)) for (const tracker of guild) {
+        if (tracker.guild=='<global>'&&(tracker.terr==arg.terr||tracker.terr=='<global>')) {
+            await send(tracker.channel, {embeds: [
+                new EmbedBuilder()
+                .setTitle(':golf: Territory Captured')
+                .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total+1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total-1} > ${arg.capturer_total})`)
+                .setColor(0x2596be)
+                .setTimestamp()
+            ]})
+        } else if (tracker.guild==arg.capturer.uuid&&(tracker.terr==arg.terr||tracker.terr=='<global>')) {
+            await send(tracker.channel, {embeds: [
+                new EmbedBuilder()
+                .setTitle(':green_circle: Territory Captured')
+                .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total+1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total-1} > ${arg.capturer_total})`)
+                .setColor(0x7DDA58)
+                .setTimestamp()
+            ]})
+        } else if (tracker.guild==arg.prev_holder.uuid&&(tracker.terr==arg.terr||tracker.terr=='<global>')) {
+            await send(tracker.channel, {embeds: [
+                new EmbedBuilder()
+                .setTitle(':red_circle: Territory Lost')
+                .setDescription(`**${arg.terr}**\n**${arg.prev_holder.name} [${arg.prev_holder.prefix}]** (${arg.prev_holder_total+1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} [${arg.capturer.prefix}] (${arg.capturer_total-1} > ${arg.capturer_total})`)
+                .setColor(0xE4080A)
+                .setTimestamp()
+            ]})
+        }
+    }
+    await AddUsers(Object.getOwnPropertyNames(track.user))
+    for (const user of Object.entries(track.user)) for (const tracker of user[1]) {
+        if (tracker.guild=='<global>'&&(tracker.terr==arg.terr||tracker.terr=='<global>')) {
+            await UserData[user[0]].send({embeds: [
+                new EmbedBuilder()
+                .setTitle(':golf: Territory Captured')
+                .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total+1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total-1} > ${arg.capturer_total})`)
+                .setColor(0x2596be)
+                .setTimestamp()
+            ]})
+        } else if (tracker.guild==arg.capturer.uuid&&(tracker.terr==arg.terr||tracker.terr=='<global>')) {
+            await UserData[user[0]].send({embeds: [
+                new EmbedBuilder()
+                .setTitle(':green_circle: Territory Captured')
+                .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total+1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total-1} > ${arg.capturer_total})`)
+                .setColor(0x7DDA58)
+                .setTimestamp()
+            ]})
+        } else if (tracker.guild==arg.prev_holder.uuid&&(tracker.terr==arg.terr||tracker.terr=='<global>')) {
+            await UserData[user[0]].send({embeds: [
+                new EmbedBuilder()
+                .setTitle(':red_circle: Territory Lost')
+                .setDescription(`**${arg.terr}**\n**${arg.prev_holder.name} [${arg.prev_holder.prefix}]** (${arg.prev_holder_total+1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} [${arg.capturer.prefix}] (${arg.capturer_total-1} > ${arg.capturer_total})`)
+                .setColor(0xE4080A)
+                .setTimestamp()
+            ]})
         }
     }
 }
