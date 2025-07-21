@@ -48,7 +48,7 @@ async function guild(interaction) {
         const on_list = mlist.filter(ent=>ent.online).map(ent=>`[${ent.rank.toUpperCase()}] ${ent.name} (${ent.server})`)
         const embed1 = new EmbedBuilder() 
            .setTitle(`${dat.name}`)
-           .setDescription(`\`\`\`ml\nName: ${dat.name} (${dat.prefix})\nOwner: ${Object.getOwnPropertyNames(dat.members.owner).join("")}\nOnline: ${dat.online} / ${dat.members.total} (${findperc(dat.online, dat.members.total)}%)\nLevel: ${dat.level} (${dat.xpPercent}%)\nCreated: ${jc}\nAge: ${timer(made_date)}\nWar Count: ${dat.wars??0}\nTerritories: ${dat.territories}\`\`\`\n**Online Members: (${dat.online})**\n\`\`\`ml\n${dat.online? `${on_list.slice(0, 50).join("\n")}${dat.online==on_list.length? ``: `\n(+${dat.online-on_list.length} in Streamer)`}`: `No members online :(`}\`\`\``)
+           .setDescription(`UUID: \`${dat.uuid}\`\n\`\`\`ml\nName: ${dat.name} (${dat.prefix})\nOwner: ${Object.getOwnPropertyNames(dat.members.owner).join("")}\nOnline: ${dat.online} / ${dat.members.total} (${findperc(dat.online, dat.members.total)}%)\nLevel: ${dat.level} (${dat.xpPercent}%)\nCreated: ${jc}\nAge: ${timer(made_date)}\nWar Count: ${dat.wars??0}\nTerritories: ${dat.territories}\`\`\`\n**Online Members: (${dat.online})**\n\`\`\`ml\n${dat.online? `${on_list.slice(0, 50).join("\n")}${dat.online==on_list.length? ``: `\n(+${dat.online-on_list.length} in Streamer)`}`: `No members online :(`}\`\`\``)
            .setFooter({text: `${ulang.page} 1 / 5 - ${ulang.req_took} ${new Date().getTime()-st_time}ms`})
         //page 2
         const [owner] = mlist.filter(ent=>ent.rank=="owner")
@@ -142,7 +142,6 @@ async function guild(interaction) {
             embed.setTitle(`${ulang["404_err"]}`).setDescription(`${ulang.invalid_gn}`)
             if (similar_guilds.length) embed.setDescription(`${ulang.invalid_gn}\n**${ulang.sm_guild}:**`).addFields(similar_guilds.map(ent=>{return{name: ent[0], value: `\`\`\`yaml\nUUID: ${ent[1].uuid}\nPrefix: ${ent[1].prefix}\`\`\``}}))
         }
-        console.log(e)
         return {embeds: [embed]}
     })
 }
