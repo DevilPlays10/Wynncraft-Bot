@@ -12,6 +12,7 @@ General Purpose DiscordBot made for messing around with random API's
 ### General
 - `/mcping` pings any minecraft server
 - `/latency` displays bot's uptime and latency
+- `/bubble` gives a random speechbubble
 
 ## TODO
 
