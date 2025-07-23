@@ -1,5 +1,5 @@
 const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
-const { data, tokens: {disc_token: token} } = require('../../index.js')
+const { data, tokens: {disc_token: token} } = require('../../index.js');
 
 const commands = [
   {
@@ -114,6 +114,10 @@ const commands = [
       }
     ],
   },
+  {
+    name: 'map',
+    description: 'Shows current territory map'
+  }
 ];
 
 module.exports = (async () => {

@@ -4,6 +4,7 @@ const cmd_player = require('./commands/player.js')
 const cmd_guild = require('./commands/guild.js')
 const cmd_war_tracker = require('./commands/territory_tracker.js')
 const cmd_bubble = require('./commands/bubble.js')
+const cmd_map = require('./commands/map.js')
 
 const autoComplete = require('./autocomplete.js')
 
@@ -32,7 +33,8 @@ const cmd_autoEMBED = {
   "guild": cmd_guild.guild,
   "territory_add": cmd_war_tracker.Add,
   "territory_remove": cmd_war_tracker.Remove,
-  "bubble": cmd_bubble
+  "bubble": cmd_bubble,
+  "map": cmd_map
 }
 
 
