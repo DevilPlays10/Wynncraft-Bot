@@ -18,7 +18,8 @@ const data = {
   storage: "src/storage",
   urls: {
     mcpingurl: "https://api.mcstatus.io/v2/status/",
-    wyn: "https://api.wynncraft.com/v3/"
+    wyn: "https://api.wynncraft.com/v3/",
+    wyntills: "https://athena.wynntils.com/cache/get/"
   },
   user: null, //do not change, changes automatically after once event
   started: new Date()
@@ -36,6 +37,7 @@ client.once('ready', async (c) => {
   require('./workers/process/war_logger.js')
   require('./workers/process/scheduler.js')
   console.log(await require('./workers/commands/register.js')?? "Successfuly registered commands")
+  require('./workers/commands/commands/map.js')
 });
 
 function updateVariable(route, key, newValue) {
