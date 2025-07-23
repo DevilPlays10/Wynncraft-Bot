@@ -133,6 +133,7 @@ module.exports = (async int => {
         new EmbedBuilder()
         .setTitle('Wynncraft Territory Map')
         .setImage('attachment://roasted.png')
+        .setFooter({text: `Request took ${new Date()-st_time}ms`})
       ], files: [attachment]
     }
   }).catch(e=>{
