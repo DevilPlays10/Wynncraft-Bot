@@ -13,6 +13,8 @@
     "@discordjs/rest": "^2.4.2",
     "@discordjs/voice": "^0.18.0",
     "axios": "^1.7.9",
+    "canvas": "^3.1.2",
+    "discord-api-types": "^0.37.115",
     "discord.js": "^14.17.3",
     "node-schedule": "^2.1.1",
     "sqlite3": "^5.1.7"
