@@ -8,6 +8,7 @@ General Purpose DiscordBot made for messing around with random API's
 - `/player` check a player's stats
 - `/territory_add` adds a territory tracker to the current channel for a specific guild or GLOBAL
 - `/territory_remove` gives a list of current trackers and prompt to remove them
+- `/map` shows Territory Map
 
 ### General
 - `/mcping` pings any minecraft server
