@@ -20,6 +20,7 @@ async function call(){
             const valuesARR = Object.values(res.data).map(ent=>ent.guild)
             const pushtoDB = []
             for (ent of Object.entries(res.data)) {
+                if (!obj[ent[0]].guild.uuid || !ent[1].guild.uuid) continue;
                 if (ent[1].guild.uuid != obj[ent[0]].guild.uuid) {
                     const out = {
                         terr: ent[0],
