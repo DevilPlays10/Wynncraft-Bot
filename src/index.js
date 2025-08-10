@@ -19,7 +19,8 @@ const data = {
   urls: {
     mcpingurl: "https://api.mcstatus.io/v2/status/",
     wyn: "https://api.wynncraft.com/v3/",
-    wyntills: "https://athena.wynntils.com/cache/get/"
+    wyntills: "https://athena.wynntils.com/cache/get/",
+    ashcon: "https://api.ashcon.app/mojang/v2/"
   },
   user: null, //do not change, changes automatically after once event
   started: new Date()
