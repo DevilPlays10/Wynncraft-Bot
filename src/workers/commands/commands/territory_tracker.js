@@ -1,4 +1,4 @@
-const { updateVariable, getLang, data, axios, send, client } = require('../../../index.js')
+const { updateVariable, getLang, data, send, client } = require('../../../index.js')
 const { EmbedBuilder, PermissionsBitField, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder } = require('discord.js')
 const fs = require('fs')
 

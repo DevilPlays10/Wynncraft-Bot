@@ -1,6 +1,8 @@
-const { getLang, data, axios } = require('../../../index.js')
+const { getLang } = require('../../../index.js')
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
 const { db } = require('../../process/db.js')
+const { WynGET } = require('../../process/wyn_api.js')
+
 
 const ints = {}
 
@@ -16,11 +18,11 @@ async function guild(interaction) {
     let prefix = false
     if (guild.length<4 && !guild.includes(" ")) prefix = true
     //name reoslver
-    const list = prefix? await axios.get(`${data.urls.wyn}guild/list/guild`).catch(e=>{return e}): {status: 0}
+    const list = prefix? await WynGET(`guild/list/guild`).catch(e=>{return e}): {status: 0}
     const similar_guilds = list.status == 200? Object.entries(list.data).filter(ent=>ent[1].prefix.toLowerCase()==guild.toLowerCase()): []
     if (similar_guilds.length==1) guild = similar_guilds[0][1].prefix
     //end
-    return await axios.get(encodeURI(prefix? `${data.urls.wyn}guild/prefix/${guild}`: `${data.urls.wyn}guild/${guild}`)).then(async (res)=>{
+    return await WynGET(encodeURI(prefix? `guild/prefix/${guild}`: `guild/${guild}`)).then(async (res)=>{
         const dat = res.data
         const jc = (() => {
             const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -42,7 +44,7 @@ async function guild(interaction) {
                 })
             }
         }
-        const terrlist = await axios.get(`${data.urls.wyn}guild/list/territory`).catch(e=>e)
+        const terrlist = await WynGET(`guild/list/territory`).catch(e=>e)
         const made_date = new Date(dat.created)
         //page 1
         const on_list = mlist.filter(ent=>ent.online).map(ent=>`[${ent.rank.toUpperCase()}] ${ent.name} (${ent.server})`)

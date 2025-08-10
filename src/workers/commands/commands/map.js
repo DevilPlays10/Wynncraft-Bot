@@ -2,6 +2,8 @@ const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
 const { data: config, axios } = require('../../../index.js');
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js')
+const { WynGET } = require('../../process/wyn_api.js')
+
 
 const CANVAS_WIDTH = 1009;
 const CANVAS_HEIGHT = 1604;
@@ -122,7 +124,7 @@ async function drawMap(connectionData, data) {
 module.exports = (async int => {
   const st_time = new Date()
   await int.deferReply()
-  return axios.get(`${config.urls.wyn}guild/list/territories`).then(async ent=>{
+  return WynGET(`guild/list/territories`).then(async ent=>{
     const buffer = await drawMap(
       JSON.parse(fs.readFileSync(`${config.storage}/process/enum_terr.json`, 'utf-8')),
       ent.data

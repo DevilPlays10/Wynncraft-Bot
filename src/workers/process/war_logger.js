@@ -1,8 +1,8 @@
-const axios = require('axios')
 const { data: config, send, client } = require('../../index.js')
 const fs = require('fs')
 const { EmbedBuilder } = require('discord.js')
 const { db } = require('../process/db.js')
+const {WynGET } = require('./wyn_api.js')
 
 let obj = {}
 
@@ -14,7 +14,7 @@ module.exports = (async ()=>{
 })()
 
 async function call(){
-    await axios.get(`${config.urls.wyn}guild/list/territory`).then(res=>{
+    await WynGET(`guild/list/territory`).then(res=>{
         if (res.status != 200) return
         if (Object.values(obj).length) {
             const valuesARR = Object.values(res.data).map(ent=>ent.guild)
