@@ -16,13 +16,13 @@ async function guild(interaction) {
     const regx = guild.match(/[^A-Za-z ]/g)
     if (regx) return { embeds: [new EmbedBuilder().setTitle(`${ulang.err}`).setDescription(`${ulang.g_cause}\n[${regx.join(", ")}]`).setFooter({text: `${ulang.req_took} ${new Date().getTime()-st_time}ms`}).setTimestamp()]}
     let prefix = false
-    if (guild.length<4 && !guild.includes(" ")) prefix = true
+    if (guild.length<=4 && !guild.includes(" ")) prefix = true
     //name reoslver
     const list = prefix? await WynGET(`guild/list/guild`).catch(e=>{return e}): {status: 0}
     const similar_guilds = list.status == 200? Object.entries(list.data).filter(ent=>ent[1].prefix.toLowerCase()==guild.toLowerCase()): []
     if (similar_guilds.length==1) guild = similar_guilds[0][1].prefix
     //end
-    return await WynGET(encodeURI(prefix? `guild/prefix/${guild}`: `guild/${guild}`)).then(async (res)=>{
+    return await WynGET(prefix? `guild/prefix/${guild}`: `guild/${guild}`).then(async (res)=>{
         const dat = res.data
         const jc = (() => {
             const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
