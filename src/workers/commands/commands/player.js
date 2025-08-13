@@ -112,7 +112,7 @@ async function player(interaction) {
                 }
                 for (const [uuid, clas] of Object.entries(dat.characters).slice(0, 20).sort((a, b)=>b[1].totalLevel-a[1].totalLevel)) {
                     counter++
-                    resultarr.push({name: `${clas.type}${clas.nickname? ` (${clas.nickname})`: ""}`, value: `\`\`\`${dat.activeCharacter==uuid? `ex\n- - ACTIVE - - \n\n`: 'ml\n'}Level: ${clas.totalLevel} (${findperc(clas.totalLevel, classBasedTotals.totalLevel)}%)\nC.Level: ${clas.level} (${findperc(clas.level, classBasedTotals.level)}%)${isUndefinedRemoveElse(clas.playtime, `\nPlaytime: ${clas.playtime} (${findperc(clas.playtime, classBasedTotals.playtime)}%)`)}${isUndefinedRemoveElse(clas.logins, `\nLogins: ${clas.logins} (${findperc(clas.logins, classBasedTotals.logins)}%)`)}\n\nGamemode: ${gamemodes(clas.gamemode)}${isUndefinedRemoveElse(clas.quests, `\nQuests: ${clas.quests.length} (${findperc(clas.quests.length, classBasedTotals)}%)`)}${isUndefinedRemoveElse(clas.discoveries, `\nDiscoveries: ${clas.discoveries} (${findperc(clas.discoveries, classBasedTotals.discoveries)}%)`)}${isUndefinedRemoveElse(clas.raids, `\nRaids: ${clas.raids.total} (${findperc(clas.raids.total, classBasedTotals.raids)}%)`)}${isUndefinedRemoveElse(clas.wars, `\nWars: ${clas.wars} (${findperc(clas.wars, classBasedTotals.wars)}%)`)}\`\`\``, inline: true})
+                    resultarr.push({name: `${clas.type}${clas.nickname? ` (${clas.nickname})`: ""}`, value: `\`\`\`${dat.activeCharacter==uuid? `ex\n- - ACTIVE ${dat.server? `(${dat.server}) `: ''}- - \n\n`: 'ml\n'}Level: ${clas.totalLevel} (${findperc(clas.totalLevel, classBasedTotals.totalLevel)}%)\nC.Level: ${clas.level} (${findperc(clas.level, classBasedTotals.level)}%)${isUndefinedRemoveElse(clas.playtime, `\nPlaytime: ${clas.playtime} (${findperc(clas.playtime, classBasedTotals.playtime)}%)`)}${isUndefinedRemoveElse(clas.logins, `\nLogins: ${clas.logins} (${findperc(clas.logins, classBasedTotals.logins)}%)`)}\n\nGamemode: ${gamemodes(clas.gamemode)}${isUndefinedRemoveElse(clas.quests, `\nQuests: ${clas.quests.length} (${findperc(clas.quests.length, classBasedTotals)}%)`)}${isUndefinedRemoveElse(clas.discoveries, `\nDiscoveries: ${clas.discoveries} (${findperc(clas.discoveries, classBasedTotals.discoveries)}%)`)}${isUndefinedRemoveElse(clas.raids, `\nRaids: ${clas.raids.total} (${findperc(clas.raids.total, classBasedTotals.raids)}%)`)}${isUndefinedRemoveElse(clas.wars, `\nWars: ${clas.wars} (${findperc(clas.wars, classBasedTotals.wars)}%)`)}\`\`\``, inline: true})
                     if (counter % 2 === 0) resultarr.push({ name: '\u200B', value: '\u200B', inline: true });
                 }
                 return resultarr
@@ -130,6 +130,9 @@ async function player(interaction) {
                 `- - - TOTAL: ${dat.globalData.dungeons.total} - - -`,
                 ...Object.entries(dat.globalData.dungeons.list).map(ent=>`${ent[0]}: ${ent[1]}`)
             ]
+        }
+        const page4 = {
+            1: Object.keys(dat.ranking).length? Object.entries(dat.ranking).sort((a, b)=> a[1]-b[1]).map(ent=>`${ent[0]}: ${ent[1]}`): ['Restricted LeaderboardAccess']
         }
         const [butt1, butt2] = [
             new ButtonBuilder()
@@ -159,7 +162,7 @@ async function player(interaction) {
                     {name: 'Featured:', value: `\`\`\`ex\n${page1["3"].join('\n')}\`\`\``},
                 ])
                 .setTimestamp()
-                .setFooter({text: `Page 1 / 3`}),
+                .setFooter({text: `Page 1 / 4`}),
                 new EmbedBuilder()
                 .setTitle(`${res.data.username.replace(/_/g, "\\_")}'s Classes:`)
                 .setColor(res.data.online? 0x7DDA58: 0xE4080A)
@@ -168,7 +171,10 @@ async function player(interaction) {
                 new EmbedBuilder()
                 .setTitle((`${res.data.username.replace(/_/g, "\\_")}'s Stats:`))
                 .setColor(res.data.online? 0x7DDA58: 0xE4080A)
-                .setDescription(`**Raids:**\n\`\`\`ex\n${page3["1"].join('\n')}\`\`\`\n**Dungeons:**\n\`\`\`ml\n${page3["2"].join('\n')}\`\`\``)
+                .setDescription(`**Raids:**\n\`\`\`ex\n${page3["1"].join('\n')}\`\`\`\n**Dungeons:**\n\`\`\`ml\n${page3["2"].join('\n')}\`\`\``),
+                new EmbedBuilder()
+                .setTitle(`${res.data.username.replace(/_/g, "\\_")}'s Rankings:`)
+                .setDescription(`**Rankings:**\n\`\`\`ex\n${page4["1"].join('\n')}\`\`\``)
             ]
         }
         setTimeout(() => {
