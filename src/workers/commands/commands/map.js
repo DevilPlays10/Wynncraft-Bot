@@ -1,6 +1,6 @@
 const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
-const { data: config, axios } = require('../../../index.js');
+const { data: config } = require('../../../index.js');
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js')
 const { WynGET } = require('../../process/wyn_api.js')
 
@@ -22,10 +22,6 @@ async function drawMap(connectionData, data) {
 
   const baseMap = await loadImage(`${config.storage}/process/wynnMap.png`);
   ctx.drawImage(baseMap, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-  const colors = await axios.get(`${config.urls.wyntills}guildList`)
-    .then(res => res.data.filter(ent => ent.color && ent.prefix))
-    .catch(() => []);
 
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   const territories = Object.entries(data).map(([name, t]) => {
@@ -91,13 +87,16 @@ async function drawMap(connectionData, data) {
 
   ctx.globalAlpha = 1;
 
+  const {data: colors} = JSON.parse(fs.readFileSync(config.storage + "/process/autocomplete/colors.json"))
+
+
   for (const t of territories) {
     const [ x1, x2, y1, y2] = centerMap[t.name].meta
 
     const width = x2 - x1;
     const height = y2 - y1;
-    const color = colors.find(ent => ent._id.trim() === t.guild?.name?.trim())?.color || '#777777';
-
+    
+    const color = colors.find(ent=>ent[0]===t.guild?.name?.trim())[1]
     ctx.fillStyle = color;
     ctx.globalAlpha = overlayAlpha;
     ctx.fillRect(x1, y1, width, height);

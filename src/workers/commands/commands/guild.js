@@ -1,7 +1,8 @@
-const { getLang } = require('../../../index.js')
+const { getLang, data:config } = require('../../../index.js')
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
 const { db } = require('../../process/db.js')
 const { WynGET } = require('../../process/wyn_api.js')
+const fs = require('fs')
 
 
 const ints = {}
@@ -24,6 +25,9 @@ async function guild(interaction) {
     //end
     return await WynGET(prefix? `guild/prefix/${guild}`: `guild/${guild}`).then(async (res)=>{
         const dat = res.data
+        const {data: colors} = JSON.parse(fs.readFileSync(config.storage + "/process/autocomplete/colors.json"))
+        const color_ = colors.find(ent=>ent[0]===dat.name.trim())
+        const color = color_? color_[1]:'#777777'
         const jc = (() => {
             const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
             const date = new Date(dat.created)
@@ -52,12 +56,14 @@ async function guild(interaction) {
            .setTitle(`${dat.name}`)
            .setDescription(`UUID: \`${dat.uuid}\`\n\`\`\`ml\nName: ${dat.name} (${dat.prefix})\nOwner: ${Object.getOwnPropertyNames(dat.members.owner).join("")}\nOnline: ${dat.online} / ${dat.members.total} (${findperc(dat.online, dat.members.total)}%)\nLevel: ${dat.level} (${dat.xpPercent}%)\nCreated: ${jc}\nAge: ${timer(made_date)}\nWar Count: ${dat.wars??0}\nTerritories: ${dat.territories}\`\`\`\n**Online Members: (${dat.online})**\n\`\`\`ml\n${dat.online? `${on_list.slice(0, 50).join("\n")}${dat.online==on_list.length? ``: `\n(+${dat.online-on_list.length} in Streamer)`}`: `No members online :(`}\`\`\``)
            .setFooter({text: `${ulang.page} 1 / 5 - ${ulang.req_took} ${new Date().getTime()-st_time}ms`})
+           .setColor(color)
         //page 2
         const [owner] = mlist.filter(ent=>ent.rank=="owner")
         const embed2 = new EmbedBuilder()
            .setTitle(`${dat.prefix} Members:`)
            .setDescription(`**Total Members:** \`${dat.members.total}\`\n**Owner:**\n\`\`\`yaml\n${(owner.name).padEnd(16, ' ')} | ${owner.xp} XP ${(new Date()-owner.joined)<604800000? `[${timer(new Date(ent.joined).getTime()).split(" ")[0]}] `: ""}${owner.online? `- (${owner.server})`: ""}\`\`\``)
            .setFooter({text: `${ulang.page} 2 / 5 - ${ulang.req_took} ${new Date().getTime()-st_time}ms`})
+           .setColor(color)
         for (r of ["chief", "strategist", "captain", "recruiter", "recruit"]) {
             const list = mlist.filter(ent=>ent.rank==r).map(ent=>`${(ent.name).padEnd(16, ' ')} | ${ent.xp} XP ${(new Date().getTime()-new Date(ent.joined).getTime())<604800000? `[${timer( new Date(ent.joined).getTime() ).split(" ")[0]}] `: ""}${ent.online? `- (${ent.server})`: ""}`)
             if (!list.length) {
@@ -77,6 +83,7 @@ async function guild(interaction) {
         const embed3 = new EmbedBuilder()
            .setTitle(`${dat.prefix} Territories:`)
            .setFooter({text: `${ulang.page} 3 / 5 - ${ulang.req_took} ${new Date().getTime()-st_time}ms`})
+           .setColor(color)
         if (terrlist.status != 200) embed3.setDescription(`An Error occured\n\`\`\`js\n${terrlist.message.split("\n")[0]}\n\`\`\``)
         if (terrlist.status == 200) {
             const ters = Object.entries(terrlist.data).filter(ent=>ent[1].guild.uuid==dat.uuid).sort((a, b) => new Date(a[1].acquired).getTime()-new Date(b[1].acquired).getTime())
@@ -102,6 +109,7 @@ async function guild(interaction) {
         const embed4 = new EmbedBuilder()
            .setTitle(`${dat.prefix} War logs:`)
            .setFooter({text: `${ulang.page} 4 / 5 - ${ulang.req_took} ${new Date().getTime()-st_time}ms`})
+           .setColor(color)
         if (!g_ter.length) embed4.setDescription('\`\`\`ml\nNo History\`\`\`')
         if (g_ter.length) {
             const fields = [{name: "War Logs:", value: `\`\`\`diff\n${g_ter.slice(0, 10).join("\n\n")}\`\`\``, inline: true}]
@@ -113,6 +121,7 @@ async function guild(interaction) {
            .setTitle(`${dat.prefix} Rankings:`)
            .setDescription(`Season: Rating: Territories\`\`\`ml\n${Object.values(dat.seasonRanks).length? `${Object.entries(dat.seasonRanks).map(ent=>`${(`Season ${ent[0]}`).padEnd(10, ' ')}${(`|  ${ent[1].rating}`).padEnd(12, ' ')} | ${ent[1].finalTerritories} Terrs`).join("\n")}`: `No History`}\`\`\``)
            .setFooter({text: `${ulang.page} 5 / 5 - ${ulang.req_took} ${new Date().getTime()-st_time}ms`})
+           .setColor(color)
         //pages end
         const button1 = new ButtonBuilder()
         .setCustomId("guild_cmd_button1")
