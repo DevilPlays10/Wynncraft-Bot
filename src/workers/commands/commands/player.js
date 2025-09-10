@@ -112,7 +112,7 @@ async function player(interaction) {
                 }
                 for (const [uuid, clas] of Object.entries(dat.characters).slice(0, 20).sort((a, b)=>b[1].totalLevel-a[1].totalLevel)) {
                     counter++
-                    resultarr.push({name: `${clas.type}${clas.nickname? ` (${clas.nickname})`: ""}`, value: `\`\`\`${dat.activeCharacter==uuid? `ex\n- - ACTIVE ${dat.server? `(${dat.server}) `: ''}- - \n\n`: 'ml\n'}Level: ${clas.totalLevel} (${findperc(clas.totalLevel, classBasedTotals.totalLevel)}%)\nC.Level: ${clas.level} (${findperc(clas.level, classBasedTotals.level)}%)${isUndefinedRemoveElse(clas.playtime, `\nPlaytime: ${clas.playtime} (${findperc(clas.playtime, classBasedTotals.playtime)}%)`)}${isUndefinedRemoveElse(clas.logins, `\nLogins: ${clas.logins} (${findperc(clas.logins, classBasedTotals.logins)}%)`)}\n\nGamemode: ${gamemodes(clas.gamemode)}${isUndefinedRemoveElse(clas.quests, `\nQuests: ${clas.quests.length} (${findperc(clas.quests.length, classBasedTotals)}%)`)}${isUndefinedRemoveElse(clas.discoveries, `\nDiscoveries: ${clas.discoveries} (${findperc(clas.discoveries, classBasedTotals.discoveries)}%)`)}${isUndefinedRemoveElse(clas.raids, `\nRaids: ${clas.raids.total} (${findperc(clas.raids.total, classBasedTotals.raids)}%)`)}${isUndefinedRemoveElse(clas.wars, `\nWars: ${clas.wars} (${findperc(clas.wars, classBasedTotals.wars)}%)`)}\`\`\``, inline: true})
+                    resultarr.push({name: `${clas.type}${clas.nickname? ` (${clas.nickname})`: ""}`, value: `\`\`\`${dat.activeCharacter==uuid&&dat.online? `ex\n- - ACTIVE ${dat.server? `(${dat.server}) `: ''}- - \n\n`: 'ml\n'}Level: ${clas.totalLevel} (${findperc(clas.totalLevel, classBasedTotals.totalLevel)}%)\nC.Level: ${clas.level} (${findperc(clas.level, classBasedTotals.level)}%)${isUndefinedRemoveElse(clas.playtime, `\nPlaytime: ${clas.playtime} (${findperc(clas.playtime, classBasedTotals.playtime)}%)`)}${isUndefinedRemoveElse(clas.logins, `\nLogins: ${clas.logins} (${findperc(clas.logins, classBasedTotals.logins)}%)`)}\n\nGamemode: ${gamemodes(clas.gamemode)}${isUndefinedRemoveElse(clas.quests, `\nQuests: ${clas.quests.length} (${findperc(clas.quests.length, classBasedTotals)}%)`)}${isUndefinedRemoveElse(clas.discoveries, `\nDiscoveries: ${clas.discoveries} (${findperc(clas.discoveries, classBasedTotals.discoveries)}%)`)}${isUndefinedRemoveElse(clas.raids, `\nRaids: ${clas.raids.total} (${findperc(clas.raids.total, classBasedTotals.raids)}%)`)}${isUndefinedRemoveElse(clas.wars, `\nWars: ${clas.wars} (${findperc(clas.wars, classBasedTotals.wars)}%)`)}\`\`\``, inline: true})
                     if (counter % 2 === 0) resultarr.push({ name: '\u200B', value: '\u200B', inline: true });
                 }
                 return resultarr
@@ -121,10 +121,10 @@ async function player(interaction) {
         const page3 = {
             1: restrictions.mainAccess? [`Restricted MainAccess`]: [
                 `- - - TOTAL: ${dat.globalData.raids.total} - - -`,
-                `NOTG: ${dat.globalData.raids.list['Nest of the Grootslangs']}`,
-                `NOL: ${dat.globalData.raids.list["Orphion's Nexus of Light"]}`,
-                `TCC: ${dat.globalData.raids.list["The Canyon Colossus"]}`,
-                `TNA: ${dat.globalData.raids.list["The Nameless Anomaly"]}`
+                `NOTG: ${dat.globalData.raids.list['Nest of the Grootslangs']??0}`,
+                `NOL: ${dat.globalData.raids.list["Orphion's Nexus of Light"]??0}`,
+                `TCC: ${dat.globalData.raids.list["The Canyon Colossus"]??0}`,
+                `TNA: ${dat.globalData.raids.list["The Nameless Anomaly"]??0}`
             ],
             2: restrictions.mainAccess? [`Restricted MainAccess`]: [
                 `- - - TOTAL: ${dat.globalData.dungeons.total} - - -`,
