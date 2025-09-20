@@ -8,6 +8,8 @@ General Purpose DiscordBot made for messing around with random API's
 - `/player` check a player's stats
 - `/territory_add` adds a territory tracker to the current channel for a specific guild or GLOBAL
 - `/territory_remove` gives a list of current trackers and prompt to remove them
+- `/guild_add` adds a guild tracker to the current channel for specific guild
+- `/guild_remove` remove currently active trackers
 - `/map` shows Territory Map
 
 ### General
