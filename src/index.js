@@ -36,6 +36,7 @@ client.once('ready', async (c) => {
   data.user = c.user
   require('./workers/commands/handler.js')(client)
   require('./workers/process/war_logger.js')
+  require('./workers/process/guild_logger')
   require('./workers/process/scheduler.js')
   console.log(await require('./workers/commands/register.js')?? "Successfuly registered commands")
   require('./workers/commands/commands/map.js')
