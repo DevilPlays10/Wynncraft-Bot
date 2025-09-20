@@ -34,8 +34,27 @@ const commands = [
     ]
   },
   {
+    name: "guild_add",
+    description: `Add a guild tracker`,
+    dm_permission: false,
+    options: [
+      {
+        name: 'guild',
+        description: 'Name of the guild to track',
+        type: ApplicationCommandOptionType.String,
+        required: true,
+        autocomplete: true 
+      }
+    ]
+  },
+  {
+    name: 'guild_remove',
+    description: 'Remove a guild tracker',
+    dm_permission: false,
+  },
+  {
     name: 'territory_add',
-    description: 'Add territory tracker',
+    description: 'Add a territory tracker',
     options: [
       {
         name: 'guild',
