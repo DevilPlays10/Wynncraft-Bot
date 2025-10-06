@@ -3,7 +3,7 @@ const { data, updateVariable, log_str, axios } = require('../../index.js')
 const { WynGET } = require('./wyn_api.js')
 
 getWYNDATA()
-schedule.scheduleJob('0 0 * * *', () => {
+schedule.scheduleJob('0 * * * *', () => {
     getWYNDATA()
 });
 
