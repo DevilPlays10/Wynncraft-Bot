@@ -15,6 +15,7 @@ const shrinkFactorX = 0.94;          // shrink
 const shrinkFactorY = 0.98;          // vshrink
 const offsetX = 20;                  // ofset
 const offsetY = -10;                 // offsetr 
+const noColorFOundcolor = '#777777'
 
 async function drawMap(connectionData, data) {
   const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -96,7 +97,8 @@ async function drawMap(connectionData, data) {
     const width = x2 - x1;
     const height = y2 - y1;
     
-    const color = colors.find(ent=>ent[0]===t.guild?.name?.trim())[1]
+    const color_ = colors.find(ent=>ent[0]===t.guild?.name?.trim())
+    const color = color_? color_[1]: noColorFOundcolor 
     ctx.fillStyle = color;
     ctx.globalAlpha = overlayAlpha;
     ctx.fillRect(x1, y1, width, height);
