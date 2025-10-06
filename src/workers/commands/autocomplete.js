@@ -13,6 +13,12 @@ const extraOptions = {
             name: '<GLOBAL>',
             value: '<global>'
         }
+    ],
+        'guild_add-guild': [
+        {
+            name: '<GLOBAL>',
+            value: '<global>'
+        }
     ]
 }
 

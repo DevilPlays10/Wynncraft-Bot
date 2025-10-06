@@ -1,39 +1,76 @@
 const fs = require('fs')
-const { WynGET } = require('./wyn_api')
-const { data, send } = require('../../index.js')
+const { data, send, axios, tokens } = require('../../index.js')
 const { queueToDB, db } = require('./db')
 const { EmbedBuilder } = require('discord.js')
 
 const ranks = ['recruit', 'recruiter', 'captain', 'strategist', 'chief', 'owner']
 
+let ctoken = 0
+
 module.exports = (async () => {
     call()
-    setInterval(() => {
-        call()
-    }, 1000 * 60 * 5) //1000*60*10
+    // setInterval(() => {
+    //     call()
+    // }, 1000 * 60 * 5) //1000*60*10
 })()
 
-async function call() {
-    const { server } = JSON.parse(fs.readFileSync(data.storage + "/process/guild_track.json"))
-    const guildArray = []
-    for (val of Object.values(server)) val.forEach(ent => {
-        if (!guildArray.includes(ent.guild)) guildArray.push(ent.guild)
+async function sleep(ms) {
+    console.log('waiting', ms, 'seconmds')
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            resolve(true)
+        }, ms);
     })
-    for (const guild of guildArray) {
-        await WynGET(`guild/prefix/${guild}`).then(async res => {
-            let members = []
+}
+
+async function callGetDelay(guildName) {
+    return axios.get(encodeURI(data.urls.wyn + `guild/${guildName}`), { headers: { Authorization: `Bearer ${tokens.tokens_Trackers[ctoken]}` } }).then(ent => {
+        return ent
+    }).catch(async e => {
+        if (e.status == 429) {
+            ctoken++
+            if (ctoken == tokens.tokens_Trackers.length) {
+                await sleep(e.response.headers["ratelimit-reset"] * 1000)
+                ctoken = 0
+            }
+        }
+        return e
+    })
+}
+
+async function call() {
+    const info = {
+        start: new Date(),
+        requests: 0,
+        errors: {},
+        playersMapped: 0
+    }
+    const { data: guildsList } = (JSON.parse(fs.readFileSync(data.storage + "/process/autocomplete/guilds.json")))
+
+    for (const guildName of guildsList.map(ent => ent[0].split(' - ')[0])) {
+        info.requests++
+        const res = await callGetDelay(guildName)
+        let members = []
+        if (res.status == 200) {
             for (const rank of ['recruit', 'recruiter', 'captain', 'strategist', 'chief', 'owner']) members.push(...Object.entries(res.data.members[rank]).map(ent => {
+                info.playersMapped++
                 return [
                     rank, ent[1].uuid, ent[0], (new Date(ent[1].joined) / 1000).toFixed()
                 ]
             }))
-            const comp = await compare(guild, members, res.data)
-            queueToDB(`INSERT OR REPLACE INTO Guilds (time, prefix, members, level, srRanks, name, wars, online) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [(new Date() / 1000).toFixed(), guild, JSON.stringify(members), res.data.level, JSON.stringify(res.data.seasonRanks), res.data.name, res.data.wars, res.data.online])
+            const comp = await compare(res.data.prefix, members, res.data)
             if (comp.proceed) proceed(res.data, comp)
-        }).catch(e => {
-            console.log(e)
-        })
+            queueToDB(`INSERT OR REPLACE INTO Guilds (time, prefix, members, level, srRanks, name, wars, online) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [(new Date() / 1000).toFixed(), res.data.prefix, JSON.stringify(members), res.data.level, JSON.stringify(res.data.seasonRanks), res.data.name, res.data.wars??0, res.data.online])
+        } else {
+            if (!info.errors[res.status]) info.errors[res.status] = 0
+            info.errors[res.status]++
+        }
     }
+
+    console.log(`FINISHED MAPPING ALL`)
+    console.log(info)
+    console.log(`took ${(new Date()-info.start)/1000} seconds`)
+    call()
 }
 
 async function proceed(guild, comp) {
@@ -41,10 +78,11 @@ async function proceed(guild, comp) {
     const { server } = JSON.parse(fs.readFileSync(data.storage + "/process/guild_track.json"))
 
     for (const trackers of Object.values(server)) {
-        const t_ = trackers.filter(ent => ent.guild == guild.prefix)
+        const t_ = trackers.filter(ent => ent.guild == guild.prefix || ent.guild == '<global>')
         if (!t_.length) continue
         const color_ = colors.find(ent => ent[0] === guild.name.trim())
-        const color = color_ ? color_[1] : '#777777'
+        console.log(color_)
+        const color = color_ ? color_[0] : '#777777'
         if (comp.gname.length) await send(t_[0].channel,
             {
                 embeds: [
@@ -102,13 +140,14 @@ async function proceed(guild, comp) {
 async function compare(guild, members, data) {
     const changes = { members: [], rank: [], level: [], gname: [] }
     const dbDATA = await db.all(`SELECT * FROM Guilds WHERE prefix = ?`, [guild])
-    if (!dbDATA.length) return { proceed: false,}
+    if (!dbDATA.length) return { proceed: false, }
     const membersOLD = JSON.parse(dbDATA[0].members)
 
     members.forEach(e => {
         const oldUser_ = membersOLD.filter(ent => ent[1] == e[1])
         const oldUser = oldUser_[0] ?? []
         if (oldUser.length && oldUser[3] !== e[3]) {
+            console.log(oldUser)
             changes.members.push({ type: 'member', uuid: oldUser[1], name: oldUser[2], type: 'left', time: e[3], rank: oldUser[0] })
             changes.members.push({ uuid: e[1], name: e[2], type: `joined`, time: e[3] })
             if (e[0] !== 'recruit') changes.rank.push({ uuid: e[1], name: e[2], old: 'recruit', new: e[0] })
@@ -129,6 +168,9 @@ async function compare(guild, members, data) {
 
     if (dbDATA[0].level !== data.level) changes.level.push({ old: dbDATA[0].level, new: data.level })
     if (dbDATA[0].name !== data.name) changes.gname.push({ old: dbDATA[0].name, new: data.name })
+
+
+        if (!!Object.values(changes).flat(1).length) console.log(membersOLD, data.members)
 
     return { proceed: !!Object.values(changes).flat(1).length, ...changes }
 }

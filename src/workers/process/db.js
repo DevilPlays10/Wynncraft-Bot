@@ -1,10 +1,10 @@
 const sqlite3 = require('sqlite3')
-const { data,updateVariable } = require('../../index.js')
+const { data, updateVariable } = require('../../index.js')
 const fs = require('fs')
 
 let commands = []
 
-let {queue} = JSON.parse(fs.readFileSync(data.storage+`/process/db_inject.json`))
+let { queue } = JSON.parse(fs.readFileSync(data.storage + `/process/db_inject.json`))
 
 /**
  * 
@@ -13,29 +13,32 @@ let {queue} = JSON.parse(fs.readFileSync(data.storage+`/process/db_inject.json`)
  */
 function queueToDB(cmd, store) {
   queue.push([cmd, store])
-  updateVariable(data.storage+`/process/db_inject.json`, 'queue', queue)
+  updateVariable(data.storage + `/process/db_inject.json`, 'queue', queue)
 }
 
 push()
 setInterval(() => {
   push()
-}, 1000*60*1);
+}, 1000 * 60 * 1);
 
 function push() {
   if (!queue.length) return
+  const queue_ = queue
+  queue = []
   try {
-      const sqdb = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
+    const sqdb = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
       if (err) return
       // log_str(`[DB Insertion] Queued DB Insertion triggered with ${queue.length} entries`)
       // console.log(`db insertion happened, ${queue.length} entries`)
-      for (cmd of queue) {
+      for (cmd of queue_) {
         sqdb.run(cmd[0], cmd[1])
       }
       sqdb.close();
-      queue = []
-      updateVariable(data.storage+`/process/db_inject.json`, 'queue', [])
+      updateVariable(data.storage + `/process/db_inject.json`, 'queue', [])
     });
-  } catch(e) {
+  } catch (e) {
+    queue.push(...queue_)
+    updateVariable(data.storage + `/process/db_inject.json`, 'queue', queue)
     log_str(`[DB INSERT] Error occured during DB insertion entries: ${queue.length}`)
     warn(`[DB INSERT] Error occured during DB insertion ${queue}`)
     // console.log(e)
@@ -43,10 +46,10 @@ function push() {
 }
 
 const db = {
-  run: (list=>{
-    return new Promise((resolve, reject)=> {
-        commands.push(...list)
-        const db = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
+  run: (list => {
+    return new Promise((resolve, reject) => {
+      commands.push(...list)
+      const db = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
         if (err) reject(err)
         for (cmd of commands) {
           db.run(cmd[0], cmd[1])
@@ -59,8 +62,8 @@ const db = {
       });
     })
   }),
-  run_each: ((command, args)=>{
-    return new Promise((resolve, reject)=> {
+  run_each: ((command, args) => {
+    return new Promise((resolve, reject) => {
       const db = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
         if (err) reject(err)
         for (arg_ of args) {
@@ -73,18 +76,18 @@ const db = {
       });
     })
   }),
-  all: ((com, args)=>{
-      return new Promise((resolve, reject) => {
-        const db = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
-          if (err) return reject(err);
-        });
-        db.all(com, args, (err, rows) => {
-            db.close();
-            if (err) return reject(err);
-            resolve(rows);
-        });
+  all: ((com, args) => {
+    return new Promise((resolve, reject) => {
+      const db = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
+        if (err) return reject(err);
+      });
+      db.all(com, args, (err, rows) => {
+        db.close();
+        if (err) return reject(err);
+        resolve(rows);
+      });
     });
   })
 }
 
-module.exports = {db, queueToDB}
+module.exports = { db, queueToDB }

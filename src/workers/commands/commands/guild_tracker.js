@@ -24,15 +24,26 @@ async function add(int) {
     //
     const { server } = JSON.parse(fs.readFileSync(data.storage + "/process/guild_track.json"))
     if (server[int.guildId]?.length >= 5) return { content: "Sorry! You've reached the maximum amount of GuildTrackers for this server, use `/guild-remove` to remove unused ones" }
-    return await WynGET(prefix ? `guild/prefix/${guild}` : `guild/${guild}`).then(async ent => {
+    console.log(guild)
+
+
+
+    const { data: guildList } = JSON.parse(fs.readFileSync(data.storage + "/process/autocomplete/guilds.json"))
+    const guildSelect = guild == '<global>' ? '<global>' : guildList.filter(ent => ent[0].split(' - ')[0].trim() == guild.trim()).map(ent => { return { name: ent[0].split(' - ')[0], tag: ent[0].split(' - ')[1], uuid: ent[1] } })[0]
+    if (!guildSelect) return { content: 'Invalid guild, Please select a correct option' }
+    const tagOrGlobal = guildSelect.tag ?? guildSelect
+    console.log(guildSelect)
+
+
+    try {
         if (!server[int.guildId]) server[int.guildId] = []
-        if (server[int.guildId].map(ent => ent.guild).includes(ent.data.prefix)) return { content: `A tracker for this guild already exists in https://discord.com/channels/${int.guildId}/${server[int.guildId].filter(wawa => wawa.guild == ent.data.prefix)[0].channel}, remove it using \`/guild-remove\`` }
-        const msg = await send(int.channelId, `Guild Tracker for \`${ent.data.name}\` added to this channel by <@${int.user.id}>`)
+        if (server[int.guildId].map(ent => ent.guild).includes(tagOrGlobal)) return { content: `A tracker for this guild already exists in https://discord.com/channels/${int.guildId}/${server[int.guildId].filter(wawa => wawa.guild == tagOrGlobal)[0].channel}, remove it using \`/guild-remove\`` }
+        const msg = await send(int.channelId, `Guild Tracker for \`${tagOrGlobal}\` added to this channel by <@${int.user.id}>`)
         if (!msg.id) return { content: `An error occured when sending a message to this channel, Please make sure i have \`SendMessages\` permission` }
         server[int.guildId].push({
             time: (new Date() / 1000).toFixed(),
-            guild: ent.data.prefix,
-            guildName: ent.data.name,
+            guild: tagOrGlobal,
+            guildName: guildSelect.name??guildSelect,
             addedBY: int.user.id,
             channel: int.channelId
         })
@@ -41,12 +52,11 @@ async function add(int) {
             embeds: [
                 new EmbedBuilder()
                     .setTitle("Successfully added guild tracker")
-                    .setDescription(`Guild: \`${ent.data.name} [${ent.data.prefix}]\`\nAddedBy: <@${int.user.id}>\n\nAny guild changes will be logged to this channel`)
+                    .setDescription(`Guild: \`${tagOrGlobal}\`\nAddedBy: <@${int.user.id}>\n\nAny guild changes will be logged to this channel`)
                     .setFooter({ text: `Request took ${new Date() - st_time}ms` })
             ]
         }
-    }).catch(e => {
-        console.log(e)
+    } catch (e) {
         return {
             embeds: [
                 new EmbedBuilder()
@@ -55,7 +65,40 @@ async function add(int) {
                     .setFooter({ text: `Request took ${new Date() - st_time}ms` })
             ]
         }
-    })
+    }
+
+    // return await WynGET(prefix ? `guild/prefix/${guild}` : `guild/${guild}`).then(async ent => {
+    //     if (!server[int.guildId]) server[int.guildId] = []
+    //     if (server[int.guildId].map(ent => ent.guild).includes(ent.data.prefix)) return { content: `A tracker for this guild already exists in https://discord.com/channels/${int.guildId}/${server[int.guildId].filter(wawa => wawa.guild == ent.data.prefix)[0].channel}, remove it using \`/guild-remove\`` }
+    //     const msg = await send(int.channelId, `Guild Tracker for \`${ent.data.name}\` added to this channel by <@${int.user.id}>`)
+    //     if (!msg.id) return { content: `An error occured when sending a message to this channel, Please make sure i have \`SendMessages\` permission` }
+    //     server[int.guildId].push({
+    //         time: (new Date() / 1000).toFixed(),
+    //         guild: ent.data.prefix,
+    //         guildName: ent.data.name,
+    //         addedBY: int.user.id,
+    //         channel: int.channelId
+    //     })
+    //     updateVariable(data.storage + "/process/guild_track.json", 'server', server)
+    //     return {
+    //         embeds: [
+    //             new EmbedBuilder()
+    //                 .setTitle("Successfully added guild tracker")
+    //                 .setDescription(`Guild: \`${ent.data.name} [${ent.data.prefix}]\`\nAddedBy: <@${int.user.id}>\n\nAny guild changes will be logged to this channel`)
+    //                 .setFooter({ text: `Request took ${new Date() - st_time}ms` })
+    //         ]
+    //     }
+    // }).catch(e => {
+    //     console.log(e)
+    //     return {
+    //         embeds: [
+    //             new EmbedBuilder()
+    //                 .setTitle("An Error occured!")
+    //                 .setDescription(`Error Message:\n\`\`\`${codes[e.status ?? e.code] ?? e.message ?? e.code ?? e.status}\`\`\`\nContact dev if you think this was a mistake`)
+    //                 .setFooter({ text: `Request took ${new Date() - st_time}ms` })
+    //         ]
+    //     }
+    // })
 }
 
 async function remove(int) {
