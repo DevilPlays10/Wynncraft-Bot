@@ -36,6 +36,11 @@ async function call() {
     }
 }
 
+function isValidHex(hex) {
+    const regex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+    return regex.test(hex);
+}
+
 async function proceed(guild, comp) {
     const { data: colors } = JSON.parse(fs.readFileSync(data.storage + "/process/autocomplete/colors.json"))
     const { server } = JSON.parse(fs.readFileSync(data.storage + "/process/guild_track.json"))
@@ -44,7 +49,7 @@ async function proceed(guild, comp) {
         const t_ = trackers.filter(ent => ent.guild == guild.prefix)
         if (!t_.length) continue
         const color_ = colors.find(ent => ent[0] === guild.name.trim())
-        const color = color_ ? color_[1] : '#777777'
+        const color = color_ ? isValidHex(color_[1]) ? color_[1] : '#777777' : '#777777'
         if (comp.gname.length) await send(t_[0].channel,
             {
                 embeds: [
@@ -102,7 +107,7 @@ async function proceed(guild, comp) {
 async function compare(guild, members, data) {
     const changes = { members: [], rank: [], level: [], gname: [] }
     const dbDATA = await db.all(`SELECT * FROM Guilds WHERE prefix = ?`, [guild])
-    if (!dbDATA.length) return { proceed: false,}
+    if (!dbDATA.length) return { proceed: false, }
     const membersOLD = JSON.parse(dbDATA[0].members)
 
     members.forEach(e => {
