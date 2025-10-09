@@ -88,17 +88,17 @@ async function drawMap(connectionData, data) {
 
   ctx.globalAlpha = 1;
 
-  const {data: colors} = JSON.parse(fs.readFileSync(config.storage + "/process/autocomplete/colors.json"))
+  const { data: colors } = JSON.parse(fs.readFileSync(config.storage + "/process/autocomplete/colors.json"))
 
 
   for (const t of territories) {
-    const [ x1, x2, y1, y2] = centerMap[t.name].meta
+    const [x1, x2, y1, y2] = centerMap[t.name].meta
 
     const width = x2 - x1;
     const height = y2 - y1;
-    
-    const color_ = colors.find(ent=>ent[0]===t.guild?.name?.trim())
-    const color = color_? color_[1]: noColorFOundcolor 
+
+    const color_ = colors.find(ent => ent[0] === t.guild?.name?.trim())
+    const color = color_ ? isValidHex(color_[1]) ? color_[1] : noColorFOundcolor : noColorFOundcolor
     ctx.fillStyle = color;
     ctx.globalAlpha = overlayAlpha;
     ctx.fillRect(x1, y1, width, height);
@@ -113,7 +113,7 @@ async function drawMap(connectionData, data) {
     const fontSize = Math.max(10, Math.min(10, Math.min(width, height) * 0.45));
 
     ctx.font = `bold ${fontSize}px sans-serif`;
-    ctx.fillStyle = (new Date()-new Date(t.acquired))/1000>600? 'white': '#ff0000ff'
+    ctx.fillStyle = (new Date() - new Date(t.acquired)) / 1000 > 600 ? 'white' : '#ff0000ff'
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(t.guild.prefix ?? '?', midX, midY);
@@ -122,30 +122,40 @@ async function drawMap(connectionData, data) {
   return canvas.toBuffer('image/png')
 }
 
+
+function isValidHex(hex) {
+  const regex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+  return regex.test(hex);
+}
+
+
 module.exports = (async int => {
   const st_time = new Date()
   await int.deferReply()
-  return WynGET(`guild/list/territories`).then(async ent=>{
+  return WynGET(`guild/list/territories`).then(async ent => {
     const buffer = await drawMap(
       JSON.parse(fs.readFileSync(`${config.storage}/process/enum_terr.json`, 'utf-8')),
       ent.data
     )
     const attachment = new AttachmentBuilder(buffer, { name: 'roasted.png' })
 
-    return { embeds: [
+    return {
+      embeds: [
         new EmbedBuilder()
-        .setTitle('Wynncraft Territory Map')
-        .setImage('attachment://roasted.png')
-        .setFooter({text: `Request took ${new Date()-st_time}ms`})
+          .setTitle('Wynncraft Territory Map')
+          .setImage('attachment://roasted.png')
+          .setFooter({ text: `Request took ${new Date() - st_time}ms` })
       ], files: [attachment]
     }
-  }).catch(e=>{
+  }).catch(e => {
     console.log(e)
-    return { embeds: [
-      new EmbedBuilder()
-      .setTitle('An Error occured :(')
-      .setDescription(`\`\`\`js\n${e.stack.split('\n')[0]}\`\`\``)
-      .setFooter({text: `Request took ${new Date()-st_time}ms`})
-    ]}
+    return {
+      embeds: [
+        new EmbedBuilder()
+          .setTitle('An Error occured :(')
+          .setDescription(`\`\`\`js\n${e.stack.split('\n')[0]}\`\`\``)
+          .setFooter({ text: `Request took ${new Date() - st_time}ms` })
+      ]
+    }
   })
 })
