@@ -39,9 +39,8 @@ async function player(interaction) {
     return WynGET(`player/${name}?fullResult`).then(async res=>{
         const dat = res.data
         const restrictions = dat.restrictions
-        const history = await axios.get(data.urls.ashcon+`user/${dat.username}`).catch(e=>e)
+        const history = await axios.get(data.urls.ashcon+`user/${dat.username}`, {timeout: 1000}).catch(e=>e)
         const lastUsernames = history.status==200? history.data.username_history?? []: []
-        console.log(dat)
         const classBasedTotals = restrictions.characterDataAccess? null: (()=> {
             const rnd_cls_data = {playtime: 0,deaths: 0,discoveries: 0,logins: 0,level: 0,totalLevel: 0, wars: 0}
             if (!dat.characters) return rnd_cls_data
@@ -151,7 +150,7 @@ async function player(interaction) {
             current: 0,
             pages: [
                 new EmbedBuilder()
-                .setTitle(`${res.data.username.replace(/_/g, "\\_")}'s Stats:`)
+                .setTitle(`${res.data.username.replace(/_/g, "\\_")}'${res.data.username.endsWith('s')? ``:`s`} Stats:`)
                 .setThumbnail(`https://mc-heads.net/head/${res.data.uuid}`)
                 .setColor(dat.online? 0x7DDA58: 0xE4080A)
                 .setDescription(`\`\`\`ex\n${page1["1"].join('\n')}\`\`\``)
