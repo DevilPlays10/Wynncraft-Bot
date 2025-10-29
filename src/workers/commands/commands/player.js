@@ -39,11 +39,11 @@ async function player(interaction) {
     return WynGET(`player/${name}?fullResult`).then(async res=>{
         const dat = res.data
         const restrictions = dat.restrictions
-        const history = await axios.get(data.urls.ashcon+`user/${dat.username}`).catch(e=>e)
+        const history = await axios.get(data.urls.ashcon+`user/${dat.username}`, {timeout: 1000}).catch(e=>e)
         const lastUsernames = history.status==200? history.data.username_history?? []: []
-        console.log(dat)
         const classBasedTotals = restrictions.characterDataAccess? null: (()=> {
             const rnd_cls_data = {playtime: 0,deaths: 0,discoveries: 0,logins: 0,level: 0,totalLevel: 0, wars: 0}
+            if (!dat.characters) return rnd_cls_data
             for (clas of Object.values(dat.characters)) {
                 for (rnd of Object.getOwnPropertyNames(rnd_cls_data)) {
                     if (clas[rnd]===undefined) {
@@ -110,6 +110,7 @@ async function player(interaction) {
                     if (data==undefined) return ''
                     return full
                 }
+                if (!dat.characters) return [{name: 'Classes:', value: "```\nNo Class data :(```"}]
                 for (const [uuid, clas] of Object.entries(dat.characters).slice(0, 20).sort((a, b)=>b[1].totalLevel-a[1].totalLevel)) {
                     counter++
                     resultarr.push({name: `${clas.type}${clas.nickname? ` (${clas.nickname})`: ""}`, value: `\`\`\`${dat.activeCharacter==uuid&&dat.online? `ex\n- - ACTIVE ${dat.server? `(${dat.server}) `: ''}- - \n\n`: 'ml\n'}Level: ${clas.totalLevel} (${findperc(clas.totalLevel, classBasedTotals.totalLevel)}%)\nC.Level: ${clas.level} (${findperc(clas.level, classBasedTotals.level)}%)${isUndefinedRemoveElse(clas.playtime, `\nPlaytime: ${clas.playtime} (${findperc(clas.playtime, classBasedTotals.playtime)}%)`)}${isUndefinedRemoveElse(clas.logins, `\nLogins: ${clas.logins} (${findperc(clas.logins, classBasedTotals.logins)}%)`)}\n\nGamemode: ${gamemodes(clas.gamemode)}${isUndefinedRemoveElse(clas.quests, `\nQuests: ${clas.quests.length} (${findperc(clas.quests.length, classBasedTotals)}%)`)}${isUndefinedRemoveElse(clas.discoveries, `\nDiscoveries: ${clas.discoveries} (${findperc(clas.discoveries, classBasedTotals.discoveries)}%)`)}${isUndefinedRemoveElse(clas.raids, `\nRaids: ${clas.raids.total} (${findperc(clas.raids.total, classBasedTotals.raids)}%)`)}${isUndefinedRemoveElse(clas.wars, `\nWars: ${clas.wars} (${findperc(clas.wars, classBasedTotals.wars)}%)`)}\`\`\``, inline: true})
@@ -149,7 +150,7 @@ async function player(interaction) {
             current: 0,
             pages: [
                 new EmbedBuilder()
-                .setTitle(`${res.data.username.replace(/_/g, "\\_")}'s Stats:`)
+                .setTitle(`${res.data.username.replace(/_/g, "\\_")}'${res.data.username.endsWith('s')? ``:`s`} Stats:`)
                 .setThumbnail(`https://mc-heads.net/head/${res.data.uuid}`)
                 .setColor(dat.online? 0x7DDA58: 0xE4080A)
                 .setDescription(`\`\`\`ex\n${page1["1"].join('\n')}\`\`\``)
