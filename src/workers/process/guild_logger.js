@@ -5,6 +5,39 @@ const { queueToDB, db } = require('./db')
 const { EmbedBuilder } = require('discord.js')
 
 const ranks = ['recruit', 'recruiter', 'captain', 'strategist', 'chief', 'owner']
+const seasonRankings = [
+    [1, "Contender"],
+    [200, "+2048 Emeralds"],
+    [800, "+2 Public Bank Slot"],
+    [2000, "🥉 Season Badge - Bronze"],
+    [7000, "+2 Public Bank Slot"],
+    [10000, "🥈 Season Badge - Silver"],
+    [15000, "+2 Public Bank Slot"],
+    [20000, "+1 Guild Tome"],
+    [30000, "+6144 Emeralds"],
+    [45000, "+1 Private Bank Slot"],
+    [70000, "+2 Guild Tome"],
+    [100000, "🥈 Season Badge - Gold"],
+    [140000, "+10240 Emeralds"],
+    [200000, "+2 Public Bank Slot"],
+    [260000, "+3 Guild Tome"],
+    [330000, "+2 Private Bank Slot"],
+    [430000, "+20480 Emeralds"],
+    [540000, "+2 Public Bank Slot"],
+    [650000, "+5 Guild Tome"],
+    [760000, "🥇 Season Badge - Platinum"],
+    [880000, "+40960 Emeralds"],
+    [1000000, "+10 Guild Tome"],
+    [1200000, "+2 Public Bank Slot"],
+    [1500000, "+61440 Emeralds"],
+    [2000000, "+2 Private Bank Slot"],
+    [2500000, "+15 Guild Tome"],
+    [3000000, "+2 Public Bank Slot"],
+    [3500000, "+2 Private Bank Slot"],
+    [4000000, "+102400 Emeralds"],
+    [5000000, "🥇 Season Badge - Diamond"]
+]
+
 
 module.exports = (async () => {
     call()
@@ -42,6 +75,7 @@ function isValidHex(hex) {
 }
 
 async function proceed(guild, comp) {
+    console.log(guild, comp)
     const { data: colors } = JSON.parse(fs.readFileSync(data.storage + "/process/autocomplete/colors.json"))
     const { server } = JSON.parse(fs.readFileSync(data.storage + "/process/guild_track.json"))
 
@@ -105,10 +139,11 @@ async function proceed(guild, comp) {
 }
 
 async function compare(guild, members, data) {
-    const changes = { members: [], rank: [], level: [], gname: [] }
+    const changes = { members: [], rank: [], level: [], gname: [], sr: [] }
     const dbDATA = await db.all(`SELECT * FROM Guilds WHERE prefix = ?`, [guild])
     if (!dbDATA.length) return { proceed: false, }
     const membersOLD = JSON.parse(dbDATA[0].members)
+    const srData = JSON.parse(dbDATA[0].srRanks)
 
     members.forEach(e => {
         const oldUser_ = membersOLD.filter(ent => ent[1] == e[1])
@@ -128,12 +163,16 @@ async function compare(guild, members, data) {
 
     membersOLD.forEach(e => {
         const newUser_ = members.filter(ent => ent[1] == e[1])
-        if (!newUser_.length) console.log(e, newUser_)
         if (!newUser_.length) changes.members.push({ uuid: e[1], name: e[2], type: 'left', time: e[3], rank: e[0] })
     })
 
     if (dbDATA[0].level !== data.level) changes.level.push({ old: dbDATA[0].level, new: data.level })
     if (dbDATA[0].name !== data.name) changes.gname.push({ old: dbDATA[0].name, new: data.name })
-
+    const [ prevSR, newSR ] = [ Object.entries(srData).at(-1), Object.entries(data.seasonRanks).at(-1) ]
+    if (prevSR[0]==newSR[0]) for ([sr, reward] of seasonRankings.reverse()) {
+        if (prevSR[1].rating<=sr&&newSR[1].rating>=sr) {
+            changes.sr.push({season: newSR[0], sr, reward})
+        }
+    }
     return { proceed: !!Object.values(changes).flat(1).length, ...changes }
 }

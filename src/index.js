@@ -29,7 +29,64 @@ const data = {
 const tokens = JSON.parse(fs.readFileSync(data.storage+"/tokens.json"))
 client.login(tokens.disc_token)
 
-module.exports = { tokens, data, client, updateVariable, getLang, axios, send, log_str }
+const Utility = {
+  Date: {
+    /**
+     * Current date in epochTime, Use new Date().getTime() for miliseconds
+     * @returns {Integer} Epoch Time
+     */
+    now: () => (new Date() / 1000).toFixed(),
+    /**
+     * Relative time from given timestamp till now
+     * @param {*} time time in EPOCH MILISECONDS
+     * @param {String} include String of allowed usables, ydhms (year, day, hour, minute, second)
+     * @param dura true to use miliseconds instead of epoch time
+     * @param {Number} onlyFans  set to value if u want the output to be only biggest num, like 2y instead of 2y 29d etc
+     * @returns 
+     */
+    relative: (time, include, dura, onlyFans) => {
+      const elapsedTime = dura ? time : new Date() - new Date(time);
+      let totalSeconds = Math.floor(elapsedTime / 1000);
+
+      const units = {
+        y: 31536000,
+        d: 86400,
+        h: 3600,
+        m: 60,
+        s: 1
+      };
+
+      const array = [];
+
+      for (const [unit, value] of Object.entries(units)) {
+        if (include.includes(unit)) {
+          const amount = Math.floor(totalSeconds / value);
+          if (amount > 0) array.push(`${amount}${unit}`);
+          totalSeconds -= amount * value;
+        }
+      }
+
+      if (onlyFans) return array.slice(0, onlyFans).join(' ') ?? '0s'
+      return array.length ? array.join(' ') : '0s';
+    }
+  },
+  Num: {
+    /**
+     * Turn a number into a prefixed number like 10000 into 10K
+     * @param {Number} num 
+     * @returns {String}
+     */
+    Small: (num) => {
+      if (num < 10000) return Number(num)
+      if (num > 10000 && num < 1000000) return Number((num / 1000).toFixed(1)) + "K"
+      if (num > 1000000 && num < 1000000000) return Number((num / 1000000).toFixed(1)) + "M"
+      if (num > 1000000000 && num < 1000000000000) return Number((num / 1000000000).toFixed(1)) + "B"
+      return Number((num / 1000000000000).toFixed(1)) + "T"
+    }
+  }
+}
+
+module.exports = { tokens, data, client, updateVariable, getLang, axios, send, log_str, Utility }
 
 client.once('ready', async (c) => {
   log_str('[MAIN] Initialized')
