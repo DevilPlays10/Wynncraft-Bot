@@ -135,6 +135,21 @@ async function proceed(guild, comp) {
                 }
             )
         }
+        if (comp.sr.length) {
+            const season = comp.sr[0].season
+            const SrArray = comp.sr.map(ent => `Reached \`${ent.sr}\` Rating\n> ${ent.reward}`)
+            await send(t_[0].channel,
+                {
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle(`${guild.name.slice(0, 25)} [${guild.prefix}]`)
+                            .setDescription(`**☁️ Season ${season}**\n${SrArray.join('\n')}`)
+                            .setTimestamp()
+                            .setColor(color)
+                    ]
+                }
+            )
+        }
     }
 }
 
