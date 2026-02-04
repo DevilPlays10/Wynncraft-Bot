@@ -69,8 +69,7 @@ async function player(interaction) {
                 '',
                 `Name: ${dat.username}`,
                 `UUID: "${dat.uuid}"`,
-                `Rank: ${dat.shortenedRank ? `[${dat.shortenedRank?.toUpperCase()}] ` : ``}${dat.supportRank?.toUpperCase() ?? 'Rankless'}
-                ${dat.guild? ``: `\nGuild: Guildless`}`,
+                `Rank: ${dat.shortenedRank ? `[${dat.shortenedRank?.toUpperCase()}] ` : ``}${dat.supportRank?.toUpperCase() ?? 'Rankless'}${dat.guild? ``: `\nGuild: Guildless`}`,
                 // `Guild: ${dat.guild ? `${dat.guild.name} [${dat.guild.prefix}] (${dat.guild.rank})` : `Guildless`}`,
                 `Playtime: ${restrictions.mainAccess ? '-RESTRICTED-' : `${dat.playtime} (${(dat.playtime / 24).toFixed(2)} Days)`}`,
                 `First_Join: ${restrictions.mainAccess ? '-RESTRICTED-' : (() => {

@@ -1,6 +1,6 @@
-const { Client, GatewayIntentBits, Partials} = require('discord.js');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const fs = require('fs')
-const client = new Client({ 
+const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
@@ -26,7 +26,7 @@ const data = {
   started: new Date()
 }
 
-const tokens = JSON.parse(fs.readFileSync(data.storage+"/tokens.json"))
+const tokens = JSON.parse(fs.readFileSync(data.storage + "/tokens.json"))
 client.login(tokens.disc_token)
 
 const Utility = {
@@ -49,10 +49,10 @@ const Utility = {
       let totalSeconds = Math.floor(elapsedTime / 1000);
 
       const units = {
-        y: 31536000,
-        d: 86400,
-        h: 3600,
-        m: 60,
+        y: 31556952,
+        d: 86457.6,
+        h: 3602.4,
+        m: 60.04,
         s: 1
       };
 
@@ -95,20 +95,21 @@ client.once('ready', async (c) => {
   require('./workers/process/war_logger.js')
   require('./workers/process/guild_logger')
   require('./workers/process/scheduler.js')
-  console.log(await require('./workers/commands/register.js')?? "Successfuly registered commands")
+  console.log(await require('./workers/commands/register.js') ?? "Successfuly registered commands")
   require('./workers/commands/commands/map.js')
+  // require('./workers/process/roastedAI.js')(c, client)
 });
 
 function updateVariable(route, key, newValue) {
   const data = fs.readFileSync(route, 'utf8');
   const config = JSON.parse(data);
   config[key] = newValue;
- fs.writeFileSync(route, JSON.stringify(config, null, 2), 'utf8');
+  fs.writeFileSync(route, JSON.stringify(config, null, 2), 'utf8');
 }
 
 function getLang(interaction) {
   const lang = JSON.parse(fs.readFileSync(data.storage + "/languages.json"))
-  return lang[interaction.locale.slice(0, 2)]?? lang.en
+  return lang[interaction.locale.slice(0, 2)] ?? lang.en
 }
 /**
  * Send a message to a discord channel
@@ -120,7 +121,7 @@ async function send(id, data) {
   try {
     const channel = client.channels.cache.get(id)
     return await channel.send(data)
-  } catch(e)  {
+  } catch (e) {
     return e
   }
 }
