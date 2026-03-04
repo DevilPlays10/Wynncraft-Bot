@@ -32,7 +32,7 @@ async function guild(interaction) {
         const dat = res.data
         const { data: colors } = JSON.parse(fs.readFileSync(config.storage + "/process/autocomplete/colors.json"))
         const color_ = colors.find(ent => ent[0] === dat.name.trim())
-        const color = color_[1] ? isValidHex(color_[1]) ? color_[1] : '#777777' : '#777777'
+        const color = color_ ? isValidHex(color_[1]) ? color_[1] : '#777777' : '#777777'
 
         const jc = (() => {
             const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]

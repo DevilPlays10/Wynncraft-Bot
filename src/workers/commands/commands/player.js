@@ -147,8 +147,9 @@ async function player(interaction) {
                 ...Object.entries(dat.globalData.dungeons.list).map(ent => `${ent[0]}: ${ent[1]}`)
             ]
         }
+        console.log(dat)
         const page4 = {
-            1: Object.keys(dat.ranking).length ? Object.entries(dat.ranking).sort((a, b) => a[1] - b[1]).map(ent => `${ent[0]}: ${ent[1]}`) : ['Restricted LeaderboardAccess']
+            1: dat.rankings? Object.keys(dat.ranking).length ? Object.entries(dat.ranking).sort((a, b) => a[1] - b[1]).map(ent => `${ent[0]}: ${ent[1]}`) : ['Restricted LeaderboardAccess']: ['Rankings Unavailable']
         }
         const [butt1, butt2] = [
             new ButtonBuilder()
