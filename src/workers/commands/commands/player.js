@@ -70,7 +70,7 @@ async function player(interaction) {
                 `Name: ${dat.username}`,
                 `UUID: "${dat.uuid}"`,
                 `Rank: ${dat.shortenedRank ? `[${dat.shortenedRank?.toUpperCase()}] ` : ``}${dat.supportRank?.toUpperCase() ?? 'Rankless'}${dat.guild? ``: `\nGuild: Guildless`}`,
-                // `Guild: ${dat.guild ? `${dat.guild.name} [${dat.guild.prefix}] (${dat.guild.rank})` : `Guildless`}`,
+                guildSearched ? null: 'Guildless',
                 `Playtime: ${restrictions.mainAccess ? '-RESTRICTED-' : `${dat.playtime} (${(dat.playtime / 24).toFixed(2)} Days)`}`,
                 `First_Join: ${restrictions.mainAccess ? '-RESTRICTED-' : (() => {
                     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -78,8 +78,7 @@ async function player(interaction) {
                     return `${date.getUTCDate()} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()} ${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}`
                 })()}`,
                 `Age: ${restrictions.mainAccess ? '-RESTRICTED-' : `${Utility.Date.relative(dat.firstJoin, 'ydhms', 0, 3)}`}`,
-
-            ],
+            ].filter(ent=>ent!==null),
             2: [
                 ...restrictions.mainAccess ? ['Restricted MainAccess'] : [
                     `Total Level: ${dat.globalData.totalLevel}`,
@@ -106,6 +105,7 @@ async function player(interaction) {
             5: guildSearched ? [
                 `Guild: ${dat.guild.name} [${dat.guild.prefix}] (${dat.guild.rank})`,
                 `Joined: ${Utility.Date.relative(guildSearched.joined, 'ydhms', 0, 3)} ago`,
+                `GRaids: ${guildSearched.guildRaids.total??0}`,
                 `Contributed: ${Utility.Num.Small(guildSearched.contributed)} (#${guildSearched.contributionRank})`
             ] : null
         }
@@ -128,7 +128,7 @@ async function player(interaction) {
                 if (!dat.characters) return [{ name: 'Classes:', value: "```\nNo Class data :(```" }]
                 for (const [uuid, clas] of Object.entries(dat.characters).slice(0, 20).sort((a, b) => b[1].totalLevel - a[1].totalLevel)) {
                     counter++
-                    resultarr.push({ name: `${clas.type}${clas.nickname ? ` (${clas.nickname})` : ""}`, value: `\`\`\`${dat.activeCharacter == uuid && dat.online ? `ex\n- - ACTIVE ${dat.server ? `(${dat.server}) ` : ''}- - \n\n` : 'ml\n'}Level: ${clas.totalLevel} (${findperc(clas.totalLevel, classBasedTotals.totalLevel)}%)\nC.Level: ${clas.level} (${findperc(clas.level, classBasedTotals.level)}%)${isUndefinedRemoveElse(clas.playtime, `\nPlaytime: ${clas.playtime} (${findperc(clas.playtime, classBasedTotals.playtime)}%)`)}${isUndefinedRemoveElse(clas.logins, `\nLogins: ${clas.logins} (${findperc(clas.logins, classBasedTotals.logins)}%)`)}\n\nGamemode: ${gamemodes(clas.gamemode)}${isUndefinedRemoveElse(clas.quests, `\nQuests: ${clas.quests?.length} (${findperc(clas.quests?.length ?? 0, classBasedTotals)}%)`)}${isUndefinedRemoveElse(clas.discoveries, `\nDiscoveries: ${clas.discoveries} (${findperc(clas.discoveries, classBasedTotals.discoveries)}%)`)}${isUndefinedRemoveElse(clas.raids, `\nRaids: ${clas.raids?.total} (${findperc(clas.raids?.total, classBasedTotals.raids)}%)`)}${isUndefinedRemoveElse(clas.wars, `\nWars: ${clas.wars} (${findperc(clas.wars, classBasedTotals.wars)}%)`)}\`\`\``, inline: true })
+                    resultarr.push({ name: `${clas.type}${clas.nickname ? ` (${clas.nickname})` : ""}${isUndefinedRemoveElse(clas.contentCompletion, ` (${calcPercetentage(clas.contentCompletion)}%)`)}`, value: `\`\`\`${dat.activeCharacter == uuid && dat.online ? `ex\n- - ACTIVE ${dat.server ? `(${dat.server}) ` : ''}- - \n\n` : 'ml\n'}Level: ${clas.totalLevel} (${findperc(clas.totalLevel, classBasedTotals.totalLevel)}%)\nC.Level: ${clas.level} (${findperc(clas.level, classBasedTotals.level)}%)${isUndefinedRemoveElse(clas.playtime, `\nPlaytime: ${clas.playtime} (${findperc(clas.playtime, classBasedTotals.playtime)}%)`)}${isUndefinedRemoveElse(clas.logins, `\nLogins: ${clas.logins} (${findperc(clas.logins, classBasedTotals.logins)}%)`)}\n\nGamemode: ${gamemodes(clas.gamemode)}${isUndefinedRemoveElse(clas.raids, `\nRaids: ${clas.raids?.total}`)}${isUndefinedRemoveElse(clas.wars, `\nWars: ${clas.wars} (${findperc(clas.wars, classBasedTotals.wars)}%)`)}\`\`\``, inline: true })
                     if (counter % 2 === 0) resultarr.push({ name: '\u200B', value: '\u200B', inline: true });
                 }
                 return resultarr
@@ -143,6 +143,13 @@ async function player(interaction) {
                 `TNA: ${dat.globalData.raids.list["The Nameless Anomaly"] ?? 0}`
             ],
             2: restrictions.mainAccess ? [`Restricted MainAccess`] : [
+                `- - - TOTAL: ${dat.globalData.guildRaids.total} - - -`,
+                `NOTG: ${dat.globalData.guildRaids.list['Nest of the Grootslangs'] ?? 0}`,
+                `NOL: ${dat.globalData.guildRaids.list["Orphion's Nexus of Light"] ?? 0}`,
+                `TCC: ${dat.globalData.guildRaids.list["The Canyon Colossus"] ?? 0}`,
+                `TNA: ${dat.globalData.guildRaids.list["The Nameless Anomaly"] ?? 0}`
+            ],
+            3: restrictions.mainAccess ? [`Restricted MainAccess`] : [
                 `- - - TOTAL: ${dat.globalData.dungeons.total} - - -`,
                 ...Object.entries(dat.globalData.dungeons.list).map(ent => `${ent[0]}: ${ent[1]}`)
             ]
@@ -186,7 +193,7 @@ async function player(interaction) {
                 new EmbedBuilder()
                     .setTitle((`${res.data.username.replace(/_/g, "\\_")}'s Stats:`))
                     .setColor(res.data.online ? 0x7DDA58 : 0xE4080A)
-                    .setDescription(`**Raids:**\n\`\`\`ex\n${page3["1"].join('\n')}\`\`\`\n**Dungeons:**\n\`\`\`ml\n${page3["2"].join('\n')}\`\`\``),
+                    .setDescription(`**Raids:**\n\`\`\`ex\n${page3["1"].join('\n')}\`\`\`\n**Guild Raids:**\n\`\`\`ex\n${page3['2'].join("\n")}\`\`\`\n**Dungeons:**\n\`\`\`ml\n${page3["3"].join('\n')}\`\`\``),
                 new EmbedBuilder()
                     .setTitle(`${res.data.username.replace(/_/g, "\\_")}'s Rankings:`)
                     .setDescription(`**Rankings:**\n\`\`\`ex\n${page4["1"].join('\n')}\`\`\``)
@@ -256,4 +263,13 @@ function ratio(a, b) {
     if (r == "NaN") return 0
     if (r == "Infinity") return "∞"
     return r
+}
+
+/**
+ * Calculate the percentage of completion a user has done on their classes
+ * @param {Integer} contentCompletion wynn response of content 
+ * @returns {Integer}
+ */
+function calcPercetentage(contentCompletion) {
+    return Math.floor(((contentCompletion) / 1133) * 100)
 }
