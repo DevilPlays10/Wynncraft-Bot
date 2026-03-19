@@ -45,7 +45,7 @@ const commands = [
         required: true,
         autocomplete: true 
       },
-            {
+      {
         name: 'type',
         description: 'type of tracker to add',
         type: ApplicationCommandOptionType.String,

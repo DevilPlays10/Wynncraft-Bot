@@ -2,8 +2,24 @@ const { getLang, data: config, Utility, tokens } = require('../../../index.js')
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
 const { db } = require('../../process/db.js')
 const { WynGET } = require('../../process/wyn_api.js')
+const { CalcMemberSlots } = require('../../utility')
 const fs = require('fs')
 
+
+const raidColors = {
+    "Nest of the Grootslangs": "#3daf65",
+    "Orphion's Nexus of Light": "#c1d2d0",
+    "The Canyon Colossus": "#584c4d",
+    "The Nameless Anomaly": "#15110e",
+    404: "#999999"
+}
+const raidNicks = {
+    "Nest of the Grootslangs": "NOTG",
+    "Orphion's Nexus of Light": "NOL",
+    "The Canyon Colossus": "TCC",
+    "The Nameless Anomaly": "TNA",
+    404: "error missing"
+}
 
 const ints = {}
 
@@ -28,7 +44,9 @@ async function guild(interaction) {
     const ulang = getLang(interaction)
     let guild = interaction.options.getString('name').trim()
     const regx = guild.match(/[^A-Za-z ]/g)
+
     if (regx) return { embeds: [new EmbedBuilder().setTitle(`${ulang.err}`).setDescription(`${ulang.g_cause}\n[${regx.join(", ")}]`).setFooter({ text: `${ulang.req_took} ${new Date().getTime() - st_time}ms` }).setTimestamp()] }
+
     let prefix = false
     if (guild.length <= 4 && !guild.includes(" ")) prefix = true
     //name reoslver
@@ -38,6 +56,7 @@ async function guild(interaction) {
     //end
     return await WynGET(prefix ? `guild/prefix/${guild}` : `guild/${guild}`, BFSToken(interaction.guildId, interaction.member) ? `Bearer ${tokens.wyn_api_GUILD}` : null).then(async (res) => {
         const dat = res.data
+        console.log(dat)
         const { data: colors } = JSON.parse(fs.readFileSync(config.storage + "/process/autocomplete/colors.json"))
         const color_ = colors.find(ent => ent[0] === dat.name.trim())
         const color = color_ ? isValidHex(color_[1]) ? color_[1] : '#777777' : '#777777'
@@ -58,7 +77,8 @@ async function guild(interaction) {
                     name: mem[0],
                     uuid: mem[1].uuid,
                     rank: rank,
-                    joined: new Date(mem[1].joined)
+                    joined: new Date(mem[1].joined),
+                    guildRaids: mem[1].guildRaids
                 })
             }
         }
@@ -68,15 +88,14 @@ async function guild(interaction) {
         const on_list = mlist.filter(ent => ent.online).map(ent => `[${ent.rank.toUpperCase()}] ${ent.name} (${ent.server})`)
         const embed1 = new EmbedBuilder()
             .setTitle(`${dat.name}`)
-            .setDescription(`UUID: \`${dat.uuid}\`\n\`\`\`ml\nName: ${dat.name} (${dat.prefix})\nOwner: ${Object.getOwnPropertyNames(dat.members.owner).join("")}\nOnline: ${dat.online} / ${dat.members.total} (${findperc(dat.online, dat.members.total)}%)\nLevel: ${dat.level} (${dat.xpPercent}%)\nCreated: ${jc}\nAge: ${Utility.Date.relative(made_date, 'ydhms', 0, 3)}\nWar Count: ${dat.wars ?? 0}\nTerritories: ${dat.territories}\`\`\`\n**Online Members: (${dat.online})**\n\`\`\`ml\n${dat.online ? `${on_list.slice(0, 50).join("\n")}${dat.online == on_list.length ? `` : `\n(+${dat.online - on_list.length} in Streamer)`}` : `No members online :(`}\`\`\``)
-            .setFooter({ text: `${ulang.page} 1 / 5 - ${ulang.req_took} ${new Date().getTime() - st_time}ms` })
+            .setFooter({ text: `Page 1 / 6 - Request took ${new Date()-st_time}ms` })
+            .setDescription(`UUID: \`${dat.uuid}\`\n\`\`\`ml\nName: ${dat.name} (${dat.prefix})\nOwner: ${Object.getOwnPropertyNames(dat.members.owner).join("")}\nMembers: ${dat.members.total} / ${CalcMemberSlots(dat.level)}\nLevel: ${dat.level} (${dat.xpPercent}%)\nCreated: ${jc}\nAge: ${Utility.Date.relative(made_date, 'ydhms', 0, 3)}\nWar Count: ${dat.wars ?? 0}\nTerritories: ${dat.territories}\`\`\`\n**Online Members: (${dat.online})**\n\`\`\`ml\n${dat.online ? `${on_list.slice(0, 50).join("\n")}${dat.online == on_list.length ? `` : `\n(+${dat.online - on_list.length} in Streamer)`}` : `No members online :(`}\`\`\``)
             .setColor(color)
         //page 2
         const [owner] = mlist.filter(ent => ent.rank == "owner")
         const embed2 = new EmbedBuilder()
             .setTitle(`${dat.prefix} Members:`)
             .setDescription(`**Total Members:** \`${dat.members.total}\`\n**Owner:**\n\`\`\`yaml\n${(owner.name).padEnd(16, ' ')} | ${Utility.Num.Small(owner.xp)} XP ${(new Date() - owner.joined) < 604800000 ? `[${Utility.Date.relative(ent.joined, 'dhms', 0, 1)}] ` : ""}${owner.online ? `- (${owner.server})` : ""}\`\`\``)
-            .setFooter({ text: `${ulang.page} 2 / 5 - ${ulang.req_took} ${new Date().getTime() - st_time}ms` })
             .setColor(color)
         for (r of ["chief", "strategist", "captain", "recruiter", "recruit"]) {
             const list = mlist.filter(ent => ent.rank == r).map(ent => `${(ent.name).padEnd(16, ' ')} | ${Utility.Num.Small(ent.xp)} XP ${(new Date().getTime() - new Date(ent.joined).getTime()) < 604800000 ? `[${Utility.Date.relative(ent.joined, 'dhms', 0, 1)}] ` : ""}${ent.online ? `- (${ent.server})` : ""}`)
@@ -93,10 +112,60 @@ async function guild(interaction) {
                 });
             }
         }
-        //page 3
+        console.log(mlist)
+        // page guild raids 
+
+        let total = 0
+        const topRaiders = (mlist.map(ent => ([ent.name, ent.guildRaids.total])).sort((a, b) => b[1] - a[1]))
+        const graidSeperates = {}
+
+        mlist.map(ent => ent.guildRaids).forEach(ent => { // divide the numbers by 4 coz takes 4 members for a graid ykykyk
+            total += ent.total / 4
+            for (const [raid, count] of Object.entries(ent.list)) {
+                if (!graidSeperates[raid]) graidSeperates[raid] = 0
+                graidSeperates[raid] += count / 4
+            }
+        })
+
+        const entries = Object.entries(graidSeperates).map(ent => {
+            return { raid: raidNicks[ent[0]], count: ent[1], color: raidColors[ent[0]] ?? raidColors[404] }
+        }).sort((a, b) => b.count - a.count)
+
+        const graphConfig = {
+            type: 'pie',
+            data: {
+                labels: entries.map(ent => ent.raid),
+                datasets: [{
+                    label: `GRaids ${dat.prefix}`,
+                    data: entries.map(ent => Math.floor(ent.count)),
+                    backgroundColor: entries.map(ent => ent.color)
+                }]
+            },
+            options: {
+                plugins: {
+                    datalabels: {
+                        color: '#6faef7',
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        }
+                    }
+                }
+            }
+        }
+
+        const embedGRaids = new EmbedBuilder()
+            .setTitle(`${dat.prefix} Guild Raids`)
+            .setColor(color)
+            .addFields([
+                { name: `Guild Raids: (${Math.floor(total)})`, value: `\`\`\`ex\n${entries.map(ent => `${ent.raid}: ${ent.count} [${findperc(ent.count, total)}%]`).join("\n")}\`\`\`` },
+                { name: `**Top Raiders:**`, value: `\`\`\`ex\n${topRaiders.slice(0, 5).map(ent => `${ent[0]}: ${ent[1]}`).join("\n")}\`\`\`` }
+            ])
+            .setImage(`https://quickchart.io/chart?w=700&h=700&c=${encodeURIComponent(JSON.stringify(graphConfig))}`)
+        // page end
+        //page terrs
         const embed3 = new EmbedBuilder()
             .setTitle(`${dat.prefix} Territories:`)
-            .setFooter({ text: `${ulang.page} 3 / 5 - ${ulang.req_took} ${new Date().getTime() - st_time}ms` })
             .setColor(color)
         if (terrlist.status != 200) embed3.setDescription(`An Error occured\n\`\`\`js\n${terrlist.message.split("\n")[0]}\n\`\`\``)
         if (terrlist.status == 200) {
@@ -113,7 +182,7 @@ async function guild(interaction) {
                 embed3.addFields({ name: `Territories: (0)`, value: "\`\`\`js\nGuild owns 0 Territories\`\`\`" })
             }
         }
-        //pahe 4 terr history
+        //pahe terr history
         const uuid = res.data.uuid.replace(/-/g, '');
         const terr_data = await db.all(`SELECT * FROM Territories WHERE GuildUUID = ? OR PreviousGuildUUID = ? ORDER BY Time DESC LIMIT 20`, [uuid, uuid])
         const g_ter = terr_data.map(ent => `${ent.GuildUUID == dat.uuid.replace(/-/g, '') ?
@@ -122,7 +191,6 @@ async function guild(interaction) {
             }`)
         const embed4 = new EmbedBuilder()
             .setTitle(`${dat.prefix} War logs:`)
-            .setFooter({ text: `${ulang.page} 4 / 5 - ${ulang.req_took} ${new Date().getTime() - st_time}ms` })
             .setColor(color)
         if (!g_ter.length) embed4.setDescription('\`\`\`ml\nNo History\`\`\`')
         if (g_ter.length) {
@@ -130,33 +198,37 @@ async function guild(interaction) {
             if (g_ter.length > 10) fields.push({ name: "War Logs:", value: `\`\`\`diff\n${g_ter.slice(10, 20).join("\n\n")}\`\`\``, inline: true })
             embed4.addFields(fields)
         }
-        //page 5
+        //page SR rating
         const embed5 = new EmbedBuilder()
             .setTitle(`${dat.prefix} Rankings:`)
             .setDescription(`Season: Rating: Territories\`\`\`ml\n${Object.values(dat.seasonRanks).length ? `${Object.entries(dat.seasonRanks).map(ent => `${(`Season ${ent[0]}`).padEnd(10, ' ')}${(`|  ${ent[1].rating}`).padEnd(12, ' ')} | ${ent[1].finalTerritories} Terrs`).join("\n")}` : `No History`}\`\`\``)
-            .setFooter({ text: `${ulang.page} 5 / 5 - ${ulang.req_took} ${new Date().getTime() - st_time}ms` })
             .setColor(color)
         //pages end
+
         const button1 = new ButtonBuilder()
             .setCustomId("guild_cmd_button1")
-            .setLabel(`${ulang["page<"]}`)
+            .setLabel(`Previous Page`)
             .setStyle(ButtonStyle.Primary)
         const button2 = new ButtonBuilder()
             .setCustomId("guild_cmd_button2")
-            .setLabel(`${ulang["page>"]}`)
+            .setLabel(`Next Page`)
             .setStyle(ButtonStyle.Primary)
         const row = new ActionRowBuilder().addComponents(button1, button2)
+
         ints[msg.resource.message.id] = {
             current: 0,
-            pages: [embed1, embed2, embed3, embed4, embed5]
+            pages: [embed1, embed2, embedGRaids, embed3, embed4, embed5]
         }
+
         setTimeout(() => {
             const row = new ActionRowBuilder().addComponents(button1.setDisabled(true), button2.setDisabled(true))
             delete ints[interaction.webhook.id]
             interaction.editReply({ components: [row] }).catch(e => console.log(e))
         }, 600000);
         return { embeds: [embed1], components: [row] }
+
     }).catch(async (e) => {
+
         console.log(e)
         const embed = new EmbedBuilder()
             .setTitle(`${ulang.err}`)
@@ -168,6 +240,7 @@ async function guild(interaction) {
             if (similar_guilds.length) embed.setDescription(`${ulang.invalid_gn}\n**${ulang.sm_guild}:**`).addFields(similar_guilds.map(ent => { return { name: ent[0], value: `\`\`\`yaml\nUUID: ${ent[1].uuid}\nPrefix: ${ent[1].prefix}\`\`\`` } }))
         }
         return { embeds: [embed] }
+
     })
 }
 
@@ -182,15 +255,14 @@ async function buttons(interaction) {
         } else {
             ints[interaction.message.id].current--
         }
-        interaction.update({ embeds: [ints[interaction.message.id].pages[ints[interaction.message.id].current]] })
     } else if (interaction.customId == 'guild_cmd_button2') {
         if (ints[interaction.message.id].current == ints[interaction.message.id].pages.length - 1) {
             ints[interaction.message.id].current = 0
         } else {
             ints[interaction.message.id].current++
         }
-        interaction.update({ embeds: [ints[interaction.message.id].pages[ints[interaction.message.id].current]] })
     }
+    interaction.update({ embeds: [(ints[interaction.message.id].pages[ints[interaction.message.id].current]).setFooter({ text: `Page ${ints[interaction.message.id].current + 1} / ${ints[interaction.message.id].pages.length}` })] })
 }
 
 module.exports = { guild, buttons }

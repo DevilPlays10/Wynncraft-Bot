@@ -29,6 +29,7 @@ const data = {
 const tokens = JSON.parse(fs.readFileSync(data.storage + "/tokens.json"))
 client.login(tokens.disc_token)
 
+//@Deprecated
 const Utility = {
   Date: {
     /**

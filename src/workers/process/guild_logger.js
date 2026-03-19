@@ -3,6 +3,7 @@ const { WynGET } = require('./wyn_api')
 const { data, send } = require('../../index.js')
 const { queueToDB, db } = require('./db')
 const { EmbedBuilder } = require('discord.js')
+const { CalcXPperGraid, formatNumberShort, getRewardsForGuildLevelRange } = require('../utility')
 
 const RAID_ICONS = {
     "Nest of the Grootslangs": "https://cdn.discordapp.com/attachments/1275592676233711646/1277693233530409031/100px-NestoftheGrootslangsIcon.png?ex=66ce180d&is=66ccc68d&hm=c57f7cdafeb3bb98d33efd1b35d45afc343698a0cd1f16b77772c15c80c7d4db&",
@@ -14,38 +15,7 @@ const RAID_ICONS = {
 const MAX_POSSIBLE_RAIDS_WITHIN_REQUESTS = 20
 
 const ranks = ['recruit', 'recruiter', 'captain', 'strategist', 'chief', 'owner']
-const seasonRankings = [
-    [1, "Contender"],
-    [200, "+2048 Emeralds"],
-    [800, "+2 Public Bank Slot"],
-    [2000, "🥉 Season Badge - Bronze"],
-    [7000, "+2 Public Bank Slot"],
-    [10000, "🥈 Season Badge - Silver"],
-    [15000, "+2 Public Bank Slot"],
-    [20000, "+1 Guild Tome"],
-    [30000, "+6144 Emeralds"],
-    [45000, "+1 Private Bank Slot"],
-    [70000, "+2 Guild Tome"],
-    [100000, "🥈 Season Badge - Gold"],
-    [140000, "+10240 Emeralds"],
-    [200000, "+2 Public Bank Slot"],
-    [260000, "+3 Guild Tome"],
-    [330000, "+2 Private Bank Slot"],
-    [430000, "+20480 Emeralds"],
-    [540000, "+2 Public Bank Slot"],
-    [650000, "+5 Guild Tome"],
-    [760000, "🥇 Season Badge - Platinum"],
-    [880000, "+40960 Emeralds"],
-    [1000000, "+10 Guild Tome"],
-    [1200000, "+2 Public Bank Slot"],
-    [1500000, "+61440 Emeralds"],
-    [2000000, "+2 Private Bank Slot"],
-    [2500000, "+15 Guild Tome"],
-    [3000000, "+2 Public Bank Slot"],
-    [3500000, "+2 Private Bank Slot"],
-    [4000000, "+102400 Emeralds"],
-    [5000000, "🥇 Season Badge - Diamond"]
-]
+const seasonRankingRewards = JSON.parse(fs.readFileSync(`${data.storage}/process/enums/SeasonRatingRewards.json`))
 
 
 module.exports = (async () => {
@@ -114,6 +84,7 @@ function isValidHex(hex) {
 }
 
 async function proceed(guild, comp) {
+    console.log(guild, comp)
     const { data: colors } = JSON.parse(fs.readFileSync(data.storage + "/process/autocomplete/colors.json"))
     const { server } = JSON.parse(fs.readFileSync(data.storage + "/process/guild_track.json"))
 
@@ -123,10 +94,11 @@ async function proceed(guild, comp) {
         const color_ = colors.find(ent => ent[0] === guild.name.trim())
         const color = color_ ? isValidHex(color_[1]) ? color_[1] : '#777777' : '#777777'
         for (const inServerTracker of t_) {
+            
 
             switch (inServerTracker.type) {
                 case 'All':
-                    if (comp.gname.length) await send(t_[0].channel,
+                    if (comp.gname.length) await send(inServerTracker.channel,
                         {
                             embeds: [
                                 new EmbedBuilder()
@@ -137,12 +109,15 @@ async function proceed(guild, comp) {
                             ]
                         }
                     )
-                    if (comp.level.length) await send(t_[0].channel,
+                    if (comp.level.length) await send(inServerTracker.channel,
                         {
                             embeds: [
                                 new EmbedBuilder()
                                     .setTitle(`${guild.name.slice(0, 25)} [${guild.prefix}]`)
-                                    .setDescription(`**Guild Level Up!**\n🏅 **${guild.name}** has leveled up to \`${comp.level[0].new}\``)
+                                    .setDescription(`**Guild Level Up!**\n🏅 **${guild.name}** has leveled up! \`${comp.level[0].old}\` -> \`${comp.level[0].new}\``)
+                                    .setFields(comp.level[0].rewards.length? {
+                                        name: "**Rewards:**", value: `- ${comp.level[0].rewards.slice(0, 20).join("\n- ")}`
+                                    }: [])
                                     .setTimestamp()
                                     .setColor(color)
                             ]
@@ -151,7 +126,7 @@ async function proceed(guild, comp) {
                     if (comp.members.length) {
                         const joined = comp.members.filter(ent => ent.type == 'joined')
                         const left = comp.members.filter(ent => ent.type == "left")
-                        await send(t_[0].channel,
+                        await send(inServerTracker.channel,
                             {
                                 embeds: [
                                     new EmbedBuilder()
@@ -165,7 +140,7 @@ async function proceed(guild, comp) {
                     }
                     if (comp.rank.length) {
                         const rankArray = comp.rank.map(ent => `> **${ent.name}** was \`${ranks.indexOf(ent.old) < ranks.indexOf(ent.new) ? `Promoted` : `Demoted`}\` from \`${ent.old.toUpperCase()}\` to \`${ent.new.toUpperCase()}\``)
-                        await send(t_[0].channel,
+                        await send(inServerTracker.channel,
                             {
                                 embeds: [
                                     new EmbedBuilder()
@@ -180,7 +155,7 @@ async function proceed(guild, comp) {
                     if (comp.sr.length) {
                         const season = comp.sr[0].season
                         const SrArray = comp.sr.map(ent => `Reached \`${ent.sr}\` Rating\n> ${ent.reward}`)
-                        await send(t_[0].channel,
+                        await send(inServerTracker.channel,
                             {
                                 embeds: [
                                     new EmbedBuilder()
@@ -200,8 +175,15 @@ async function proceed(guild, comp) {
 
                             const embed = new EmbedBuilder()
                                 .setTitle(raid.raid)
-                                .setDescription(`**Members:**\n${raid.members.join(', ').replace('_', "\\_")}`)
                                 .setTimestamp()
+                                .addFields([
+                                    { 
+                                        name: "**Members:**", value: `${raid.members.join(', ').replace('_', "\\_")}`
+                                    },
+                                    { 
+                                        name: "**Rewards:**", value: `- 2 Aspects\n- 4096 Emeralds\n- ${formatNumberShort(CalcXPperGraid(guild.level))} XP`
+                                    }
+                                ])
                                 .setColor(color)
                             if (RAID_ICONS[raid.raid]) embed.setThumbnail(RAID_ICONS[raid.raid])
                             return embed
@@ -211,7 +193,7 @@ async function proceed(guild, comp) {
 
                             const embeds = raidEmbeds.splice(0, 8)
 
-                            await send(t_[0].channel,
+                            await send(inServerTracker.channel,
                                 {
                                     embeds,
                                 }
@@ -268,7 +250,7 @@ async function compare(guild, members, data) {
             const mem_new = newUser_[0] // the new data gathered for the user
 
             if (mem_old.guildRaids.total != mem_new.guildRaids.total) { // if the prev and new graid values dont match, that means they did graid
-
+                console.log('committing!', mem_old.guildRaids, mem_new.guildRaids)
                 for (const [raid, completions] of Object.entries(mem_old.guildRaids.list)) {
                     const newCompletions = mem_new.guildRaids.list[raid]
 
@@ -281,6 +263,8 @@ async function compare(guild, members, data) {
                     guildRaidsRaw[raid][mem_old.name] = newCompletions - completions
                 }
 
+                console.log(guildRaidsRaw)
+
             }
 
         }
@@ -291,10 +275,10 @@ async function compare(guild, members, data) {
     console.log(guild, groupGuildRaids(guildRaidsRaw))
 
 
-    if (dbDATA[0].level !== data.level) changes.level.push({ old: dbDATA[0].level, new: data.level })
+    if (dbDATA[0].level < data.level) changes.level.push({ old: dbDATA[0].level, new: data.level, rewards: getRewardsForGuildLevelRange(dbDATA[0].level, data.level) })
     if (dbDATA[0].name !== data.name) changes.gname.push({ old: dbDATA[0].name, new: data.name })
     const [prevSR, newSR] = [Object.entries(srData).at(-1), Object.entries(data.seasonRanks).at(-1)]
-    if (prevSR[0] == newSR[0]) for ([sr, reward] of seasonRankings.reverse()) {
+    if (prevSR[0] == newSR[0]) for ([sr, reward] of seasonRankingRewards.reverse()) {
         if (prevSR[1].rating <= sr && newSR[1].rating >= sr) {
             changes.sr.push({ season: newSR[0], sr, reward })
         }
