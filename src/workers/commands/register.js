@@ -44,6 +44,16 @@ const commands = [
         type: ApplicationCommandOptionType.String,
         required: true,
         autocomplete: true 
+      },
+      {
+        name: 'type',
+        description: 'type of tracker to add',
+        type: ApplicationCommandOptionType.String,
+        required: true,
+        choices: [
+          {name: "Global Changes", value: "All"},
+          {name: "Guild Raids", value: "GRaids"}
+        ]
       }
     ]
   },
