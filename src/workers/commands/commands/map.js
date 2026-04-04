@@ -9,12 +9,12 @@ const CANVAS_WIDTH = 1009;
 const CANVAS_HEIGHT = 1604;
 
 const overlayAlpha = 0.4;            // your so transparent
-const borderWidth = 0.6;             // boy he thick
+const borderWidth = 1;             // boy he thick
 
-const shrinkFactorX = 0.94;          // shrink
-const shrinkFactorY = 0.98;          // vshrink
-const offsetX = 20;                  // ofset
-const offsetY = -10;                 // offsetr 
+const shrinkFactorX = 0.925;          // shrink
+const shrinkFactorY = 0.965;          // vshrink
+const offsetX = 13;                  // ofset
+const offsetY = -12;                 // offsetr 
 const noColorFOundcolor = '#777777'
 
 async function drawMap(connectionData, data) {
