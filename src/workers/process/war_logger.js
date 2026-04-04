@@ -10,7 +10,7 @@ module.exports = (async () => {
     call()
     setInterval(() => {
         call()
-    }, 15000);
+    }, 5000);
 })()
 
 async function call() {
@@ -52,6 +52,10 @@ async function call() {
             obj = res.data
         } else obj = res.data
     }).catch(e => {
+        if (e instanceof TypeError) {
+            console.log("Reseting war_logger-object") // wynncraft anti api fuckup prevention
+            obj = {}
+        }
         console.log(e)
     })
 }
