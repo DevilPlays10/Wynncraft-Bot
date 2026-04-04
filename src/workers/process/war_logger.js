@@ -10,7 +10,7 @@ module.exports = (async () => {
     call()
     setInterval(() => {
         call()
-    }, 5000);
+    }, 15000);
 })()
 
 async function call() {
