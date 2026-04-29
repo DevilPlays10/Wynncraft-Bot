@@ -11,6 +11,7 @@ const raidColors = {
     "Orphion's Nexus of Light": "#c1d2d0",
     "The Canyon Colossus": "#584c4d",
     "The Nameless Anomaly": "#15110e",
+    "The Wartorn Palace": "#F85818",
     404: "#999999"
 }
 const raidNicks = {
@@ -18,6 +19,7 @@ const raidNicks = {
     "Orphion's Nexus of Light": "NOL",
     "The Canyon Colossus": "TCC",
     "The Nameless Anomaly": "TNA",
+    "The Wartorn Palace": "TWP",
     404: "error missing"
 }
 
@@ -78,7 +80,7 @@ async function guild(interaction) {
                     uuid: mem[1].uuid,
                     rank: rank,
                     joined: new Date(mem[1].joined),
-                    guildRaids: mem[1].guildRaids
+                    globalData: mem[1].globalData
                 })
             }
         }
@@ -112,20 +114,25 @@ async function guild(interaction) {
                 });
             }
         }
-        console.log(mlist)
+        // console.log(mlist)
         // page guild raids 
 
         let total = 0
-        const topRaiders = (mlist.map(ent => ([ent.name, ent.guildRaids.total])).sort((a, b) => b[1] - a[1]))
-        const graidSeperates = {}
+        const topRaiders = (mlist.map(ent => ([ent.name, ent?.globalData?.guildRaids?.total??0])).sort((a, b) => b[1] - a[1]))
+        let graidSeperates = {}
 
-        mlist.map(ent => ent.guildRaids).forEach(ent => { // divide the numbers by 4 coz takes 4 members for a graid ykykyk
-            total += ent.total / 4
+        mlist.map(ent => ent?.globalData?.guildRaids).forEach(ent => { // divide the numbers by 4 coz takes 4 members for a graid ykykyk
+            if (ent ==null) return; // cpntinue doesnt work in a foreach since it is a function
+            total += ent.total? ent.total / 4 : 0
             for (const [raid, count] of Object.entries(ent.list)) {
                 if (!graidSeperates[raid]) graidSeperates[raid] = 0
                 graidSeperates[raid] += count / 4
             }
         })
+
+        // round everything
+        total = Math.round(total)
+        graidSeperates = Object.fromEntries(Object.entries(graidSeperates).map(ent=> [ent[0], Math.round(ent[1])]))
 
         const entries = Object.entries(graidSeperates).map(ent => {
             return { raid: raidNicks[ent[0]], count: ent[1], color: raidColors[ent[0]] ?? raidColors[404] }

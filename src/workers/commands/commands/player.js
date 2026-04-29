@@ -4,6 +4,7 @@ const { WynGET } = require('../../process/wyn_api.js')
 
 const ints = {}
 
+const MAX_COMPLETION_NUM = 1286
 const allowGUILDIDBFS = '962855308932317204'
 const allowROLEIDBFS = '1168775281117499485'
 
@@ -46,6 +47,7 @@ async function player(interaction) {
     }
     return WynGET(`player/${name}?fullResult`, BFSToken(interaction.guildId, interaction.member) ? `Bearer ${tokens.wyn_api_GUILD}` : null).then(async res => {
         const dat = res.data
+        console.log(dat);
         const restrictions = dat.restrictions
         const history = await axios.get(data.urls.ashcon + `user/${dat.username}`, { timeout: 1000 }).catch(e => e)
         const guild = dat.guild ? await WynGET(`guild/${dat.guild.name}`).catch(e => e) : null
@@ -105,7 +107,7 @@ async function player(interaction) {
             5: guildSearched ? [
                 `Guild: ${dat.guild.name} [${dat.guild.prefix}] (${dat.guild.rank})`,
                 `Joined: ${Utility.Date.relative(guildSearched.joined, 'ydhms', 0, 3)} ago`,
-                `GRaids: ${guildSearched.guildRaids.total??0}`,
+                `GRaids: ${dat.globalData.guildRaids.total??0}`,
                 `Contributed: ${Utility.Num.Small(guildSearched.contributed)} (#${guildSearched.contributionRank})`
             ] : null
         }
@@ -271,5 +273,5 @@ function ratio(a, b) {
  * @returns {Integer}
  */
 function calcPercetentage(contentCompletion) {
-    return Math.floor(((contentCompletion) / 1133) * 100)
+    return Math.floor(((contentCompletion) / MAX_COMPLETION_NUM) * 100)
 }
