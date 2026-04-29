@@ -249,10 +249,10 @@ async function compare(guild, members, data) {
 
             const mem_new = newUser_[0] // the new data gathered for the user
 
-            if (mem_old.globalData?.guildRaids?.total != mem_new.globalData?.guildRaids?.total) { // if the prev and new graid values dont match, that means they did graid
-                console.log('committing!', mem_old.guildRaids, mem_new.guildRaids)
-                for (const [raid, completions] of Object.entries(mem_old.guildRaids.list)) {
-                    const newCompletions = mem_new.guildRaids.list[raid]
+            if ( (mem_old.globalData?.guildRaids?.total & mem_new.globalData?.guildRaids?.total)&(mem_old.globalData?.guildRaids?.total != mem_new.globalData?.guildRaids?.total)) { // if the prev and new graid values dont match, that means they did graid
+                console.log('committing!', mem_old.globalData?.guildRaids, mem_new.globalData?.guildRaids)
+                for (const [raid, completions] of Object.entries(mem_old.globalData?.guildRaids?.list)) {
+                    const newCompletions = mem_new.globalData?.guildRaids?.list[raid]
 
                     if (completions == newCompletions) continue;
 
