@@ -9,7 +9,8 @@ const RAID_ICONS = {
     "Nest of the Grootslangs": "https://cdn.discordapp.com/attachments/1275592676233711646/1277693233530409031/100px-NestoftheGrootslangsIcon.png?ex=66ce180d&is=66ccc68d&hm=c57f7cdafeb3bb98d33efd1b35d45afc343698a0cd1f16b77772c15c80c7d4db&",
     "Orphion's Nexus of Light": "https://cdn.discordapp.com/attachments/1275592676233711646/1277693254812434442/100px-Orphion27sNexusofLightIcon.png?ex=66ce1812&is=66ccc692&hm=28f043eee4f3085caace0941b4fcd747107a6e55e87bf945dc085c6c79011591&",
     "The Canyon Colossus": "https://cdn.discordapp.com/attachments/1275592676233711646/1277693270490873937/100px-TheCanyonColossusIcon.png?ex=66ce1816&is=66ccc696&hm=6e575ce48445e7316e7fad0352ef01ea94b3fa8d3a88187d98a2405d51e10417&",
-    "The Nameless Anomaly": "https://cdn.discordapp.com/attachments/1275592676233711646/1277693286668046458/100px-TheNamelessAnomalyIcon.png?ex=66ce1819&is=66ccc699&hm=7b0b2cfa2fe9dfe52d7de1c32f7d88f397edb759591e6590577391a73fa25b9e&"
+    "The Nameless Anomaly": "https://cdn.discordapp.com/attachments/1275592676233711646/1277693286668046458/100px-TheNamelessAnomalyIcon.png?ex=66ce1819&is=66ccc699&hm=7b0b2cfa2fe9dfe52d7de1c32f7d88f397edb759591e6590577391a73fa25b9e&",
+    "The Wartorn Palace": "https://cdn.discordapp.com/attachments/1290658207617912906/1499122966212907182/100px-TheWartornPalaceIcon.png?ex=6a0ab8cf&is=6a09674f&hm=4b03efa33f9ad4c0e71956be888cf854113e5d7aac9016786da42c5bc6e381db&"
 }
 
 const MAX_POSSIBLE_RAIDS_WITHIN_REQUESTS = 20
@@ -73,7 +74,7 @@ async function call() {
 
             if (comp.proceed) proceed(res.data, comp)
         }).catch(e => {
-            console.log(e)
+            console.mmmlog(e)
         })
     }
 }
@@ -98,6 +99,7 @@ async function proceed(guild, comp) {
 
             switch (inServerTracker.type) {
                 case 'All':
+                    // guild name change
                     if (comp.gname.length) await send(inServerTracker.channel,
                         {
                             embeds: [
@@ -109,6 +111,7 @@ async function proceed(guild, comp) {
                             ]
                         }
                     )
+                    // guild level change
                     if (comp.level.length) await send(inServerTracker.channel,
                         {
                             embeds: [
@@ -123,8 +126,9 @@ async function proceed(guild, comp) {
                             ]
                         }
                     )
-                    if (comp.members.length) {
-                        const joined = comp.members.filter(ent => ent.type == 'joined')
+                    // member left / join
+                    if (comp.members.filter(ent => (ent.type == "joined") || (ent.type == "left")).length) {
+                        const joined = comp.members.filter(ent => ent.type == "joined")
                         const left = comp.members.filter(ent => ent.type == "left")
                         await send(inServerTracker.channel,
                             {
@@ -138,6 +142,23 @@ async function proceed(guild, comp) {
                             }
                         )
                     }
+                    // member name change
+                    if (comp.members.filter(ent => ent.type == "nameChange").length) {
+                        const changes = comp.members.filter(ent => ent.type == "nameChange") 
+                        await send(inServerTracker.channel,
+                            {
+                                embeds: [
+                                    new EmbedBuilder()
+                                        .setTitle(`${guild.name.slice(0, 25)} [${guild.prefix}]`)
+                                        .setDescription(`🖊️ Name changed (${changes.length})\n> ${changes.map(ent => `\`${ent.old}\` -> \`${ent.new}\``).join('\n> ')}`)
+                                        .setTimestamp()
+                                        .setColor(color)
+                                ]
+                            }
+                        )
+
+                    }
+                    // member rank change
                     if (comp.rank.length) {
                         const rankArray = comp.rank.map(ent => `> **${ent.name}** was \`${ranks.indexOf(ent.old) < ranks.indexOf(ent.new) ? `Promoted` : `Demoted`}\` from \`${ent.old.toUpperCase()}\` to \`${ent.new.toUpperCase()}\``)
                         await send(inServerTracker.channel,
@@ -223,16 +244,29 @@ async function compare(guild, members, data) {
         const oldUser_ = membersOLD.filter(ent => ent.uuid == newUser.uuid)
         const oldUser = oldUser_[0] ?? null
 
-        if (oldUser && oldUser.joined !== newUser.joined) {
+        // console.log(oldUser)
+        // console.log(newUser)
+
+        // if user changed username
+        if (oldUser && (newUser.name !== oldUser.name) ) {
+            changes.members.push({ type: 'nameChange', uuid: oldUser.uuid, old: oldUser.name, new: newUser.name})
+        }
+
+        // if member left and rejoined within short period
+        if (oldUser && (new Date(oldUser.joined).getTime() !== new Date(newUser.joined).getTime())) {
+            // console.log(oldUser)
+            // console.log(newUser)
             changes.members.push({ type: 'member', uuid: oldUser.uuid, name: oldUser.name, type: 'left', time: newUser.joined, rank: oldUser.rank })
             changes.members.push({ uuid: newUser.uuid, name: newUser.name, type: `joined`, time: newUser.joined })
             if (newUser.rank !== 'recruit') changes.rank.push({ uuid: newUser.uuid, name: newUser.name, old: 'recruit', new: newUser.rank })
         }
 
+        // if member joined and immediately got promoted
         if (!oldUser) {
             changes.members.push({ uuid: newUser.uuid, name: newUser.name, type: `joined`, time: newUser.joined })
             if (newUser.rank !== 'recruit') changes.rank.push({ uuid: newUser.uuid, name: newUser.name, old: 'recruit', new: newUser.rank })
-        } else {
+        } else { 
+            // if member got promoted or demoted
             if (oldUser && oldUser.rank !== newUser.rank) changes.rank.push({ uuid: newUser.uuid, name: newUser.name, old: oldUser.rank, new: newUser.rank })
         }
     })
@@ -244,6 +278,7 @@ async function compare(guild, members, data) {
 
             changes.members.push({ uuid: mem_old.uuid, name: mem_old.name, type: 'left', time: mem_old.joined, rank: mem_old.rank })
 
+        // guild raid stuff
         } else if ((totalRaidsMembers(members) - totalRaidsMembers(membersOLD)) < MAX_POSSIBLE_RAIDS_WITHIN_REQUESTS) {  // check total raids done by all members, if greater than threshold, skip BECAUAE SWYNNC RAFT IS FUCKING RETARDED AND RANDOMLY SENDS MEMBERS GRAIDS AS 0?????
             // compare guild raid if user already existed in the guild
 
@@ -272,11 +307,17 @@ async function compare(guild, members, data) {
     changes.graids = groupGuildRaids(guildRaidsRaw)
 
     // console.log((totalRaidsMembers(members) - totalRaidsMembers(membersOLD)))
-    console.log(guild, groupGuildRaids(guildRaidsRaw))
+    // console.log(guildRaidsRaw)
+    // console.log(guild, groupGuildRaids(guildRaidsRaw))
 
 
+    // guild level update
     if (dbDATA[0].level < data.level) changes.level.push({ old: dbDATA[0].level, new: data.level, rewards: getRewardsForGuildLevelRange(dbDATA[0].level, data.level) })
+    
+    // guild name update
     if (dbDATA[0].name !== data.name) changes.gname.push({ old: dbDATA[0].name, new: data.name })
+
+    // guild sr update
     const [prevSR, newSR] = [Object.entries(srData).at(-1), Object.entries(data.seasonRanks).at(-1)]
     if (prevSR[0] == newSR[0]) for ([sr, reward] of seasonRankingRewards.reverse()) {
         if (prevSR[1].rating <= sr && newSR[1].rating >= sr) {
