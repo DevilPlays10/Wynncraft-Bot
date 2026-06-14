@@ -1,8 +1,9 @@
-const { data: config, send, client, Utility } = require('../../index.js')
+const { data: config, send, client } = require('../../index.js')
 const fs = require('fs')
 const { EmbedBuilder } = require('discord.js')
 const { queueToDB } = require('../process/db.js')
 const { WynGET } = require('./wyn_api.js')
+const { Date: { relative } } = require('../utility')
 
 let obj = {}
 
@@ -79,7 +80,7 @@ async function logdisc(arg) {
                 embeds: [
                     new EmbedBuilder()
                         .setTitle(':golf: Territory Captured')
-                        .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${Utility.Date.relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
+                        .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
                         .setColor(0x2596be)
                         .setTimestamp()
                 ]
@@ -89,7 +90,7 @@ async function logdisc(arg) {
                 embeds: [
                     new EmbedBuilder()
                         .setTitle(':green_circle: Territory Captured')
-                        .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${Utility.Date.relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
+                        .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
                         .setColor(0x7DDA58)
                         .setTimestamp()
                 ]
@@ -99,7 +100,7 @@ async function logdisc(arg) {
                 embeds: [
                     new EmbedBuilder()
                         .setTitle(':red_circle: Territory Lost')
-                        .setDescription(`**${arg.terr}**\n**${arg.prev_holder.name} [${arg.prev_holder.prefix}]** (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} [${arg.capturer.prefix}] (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${Utility.Date.relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
+                        .setDescription(`**${arg.terr}**\n**${arg.prev_holder.name} [${arg.prev_holder.prefix}]** (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} [${arg.capturer.prefix}] (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
                         .setColor(0xE4080A)
                         .setTimestamp()
                 ]
@@ -114,7 +115,7 @@ async function logdisc(arg) {
                 embeds: [
                     new EmbedBuilder()
                         .setTitle(':golf: Territory Captured')
-                        .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${Utility.Date.relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
+                        .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
                         .setColor(0x2596be)
                         .setTimestamp()
                 ]
@@ -124,7 +125,7 @@ async function logdisc(arg) {
                 embeds: [
                     new EmbedBuilder()
                         .setTitle(':green_circle: Territory Captured')
-                        .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${Utility.Date.relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
+                        .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
                         .setColor(0x7DDA58)
                         .setTimestamp()
                 ]
@@ -134,7 +135,7 @@ async function logdisc(arg) {
                 embeds: [
                     new EmbedBuilder()
                         .setTitle(':red_circle: Territory Lost')
-                        .setDescription(`**${arg.terr}**\n**${arg.prev_holder.name} [${arg.prev_holder.prefix}]** (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} [${arg.capturer.prefix}] (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${Utility.Date.relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
+                        .setDescription(`**${arg.terr}**\n**${arg.prev_holder.name} [${arg.prev_holder.prefix}]** (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} [${arg.capturer.prefix}] (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld*1000, 'dhms', 1, 3)}\``)
                         .setColor(0xE4080A)
                         .setTimestamp()
                 ]

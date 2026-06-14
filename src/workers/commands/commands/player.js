@@ -1,6 +1,7 @@
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
-const { data, axios, tokens, Utility } = require('../../../index.js')
+const { data, axios, tokens } = require('../../../index.js')
 const { WynGET } = require('../../process/wyn_api.js')
+const { Date: {relative}, formatNumberShort } = require('../../utility.js')
 
 const ints = {}
 
@@ -66,9 +67,9 @@ async function player(interaction) {
             }
             return rnd_cls_data
         })()
-        const page1 = { //${Utility.Date.relative(guildSearched.joined, 'ydhms', 0, 2)}
+        const page1 = { //${relative(guildSearched.joined, 'ydhms', 0, 2)}
             1: [
-                restrictions.onlineStatus ? `Status Restricted` : dat.online ? `Online on ${dat.server}` : `Offline (Last seen on ${dat.server ?? "N/A"} ${Utility.Date.relative(dat.lastJoin, 'ydhms', 0, 2)} ago)`,
+                restrictions.onlineStatus ? `Status Restricted` : dat.online ? `Online on ${dat.server}` : `Offline (Last seen on ${dat.server ?? "N/A"} ${relative(dat.lastJoin, 'ydhms', 0, 2)} ago)`,
                 '',
                 `Name: ${dat.username}`,
                 `UUID: "${dat.uuid}"`,
@@ -80,7 +81,7 @@ async function player(interaction) {
                     const date = new Date(dat.firstJoin)
                     return `${date.getUTCDate()} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()} ${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}`
                 })()}`,
-                `Age: ${restrictions.mainAccess ? '-RESTRICTED-' : `${Utility.Date.relative(dat.firstJoin, 'ydhms', 0, 3)}`}`,
+                `Age: ${restrictions.mainAccess ? '-RESTRICTED-' : `${relative(dat.firstJoin, 'ydhms', 0, 3)}`}`,
             ].filter(ent=>ent!==null),
             2: [
                 ...restrictions.mainAccess ? ['Restricted MainAccess'] : [
@@ -107,8 +108,8 @@ async function player(interaction) {
             ],
             5: guildSearched ? [
                 `Guild: ${dat.guild.name} [${dat.guild.prefix}] (${dat.guild.rank})`,
-                `Joined: ${Utility.Date.relative(guildSearched.joined, 'ydhms', 0, 3)} ago`,
-                `Contributed: ${Utility.Num.Small(guildSearched.contributed)} (#${guildSearched.contributionRank})`
+                `Joined: ${relative(guildSearched.joined, 'ydhms', 0, 3)} ago`,
+                `Contributed: ${formatNumberShort(guildSearched.contributed)} (#${guildSearched.contributionRank})`
             ] : null
         }
         const page2 = {
