@@ -1,18 +1,11 @@
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
 const { data, axios, tokens } = require('../../../index.js')
 const { WynGET } = require('../../process/wyn_api.js')
-const { Date: {relative}, formatNumberShort } = require('../../utility.js')
+const { Date: {relative}, formatNumberShort, isBFSMember } = require('../../utility.js')
 
 const ints = {}
 
 const MAX_COMPLETION_NUM = 1286
-const allowGUILDIDBFS = '962855308932317204'
-const allowROLEIDBFS = '1168775281117499485'
-
-function BFSToken(guildID, member) {
-    if (guildID !== allowGUILDIDBFS) return false
-    return member._roles.includes(allowROLEIDBFS)
-}
 
 async function buttons(interaction) {
     if (!ints[interaction.message.id]) {
@@ -46,7 +39,7 @@ async function player(interaction) {
     if (name.match(/[^a-zA-Z_0-9-]/g)) return {
         content: 'Invalid username, Please make sure username is valid'
     }
-    return WynGET(`player/${name}?fullResult`, BFSToken(interaction.guildId, interaction.member) ? `Bearer ${tokens.wyn_api_GUILD}` : null).then(async res => {
+    return WynGET(`player/${name}?fullResult`, isBFSMember(interaction.guildId, interaction.member) ? `Bearer ${tokens.wyn_api_GUILD}` : null).then(async res => {
         const dat = res.data
         console.log(dat);
         console.log(dat.globalData)
@@ -143,14 +136,16 @@ async function player(interaction) {
                 `NOTG: ${dat.globalData.raids.list['Nest of the Grootslangs'] ?? 0}`,
                 `NOL: ${dat.globalData.raids.list["Orphion's Nexus of Light"] ?? 0}`,
                 `TCC: ${dat.globalData.raids.list["The Canyon Colossus"] ?? 0}`,
-                `TNA: ${dat.globalData.raids.list["The Nameless Anomaly"] ?? 0}`
+                `TNA: ${dat.globalData.raids.list["The Nameless Anomaly"] ?? 0}`,
+                `WTP: ${dat.globalData.raids.list["The Wartorn Palace"] ?? 0}`
             ],
             2: restrictions.mainAccess ? [`Restricted MainAccess`] : [
                 `- - - TOTAL: ${dat.globalData.guildRaids.total} - - -`,
                 `NOTG: ${dat.globalData.guildRaids.list['Nest of the Grootslangs'] ?? 0}`,
                 `NOL: ${dat.globalData.guildRaids.list["Orphion's Nexus of Light"] ?? 0}`,
                 `TCC: ${dat.globalData.guildRaids.list["The Canyon Colossus"] ?? 0}`,
-                `TNA: ${dat.globalData.guildRaids.list["The Nameless Anomaly"] ?? 0}`
+                `TNA: ${dat.globalData.guildRaids.list["The Nameless Anomaly"] ?? 0}`,
+                `WTP: ${dat.globalData.guildRaids.list["The Wartorn Palace"] ?? 0}`
             ],
             3: restrictions.mainAccess ? [`Restricted MainAccess`] : [
                 `- - - TOTAL: ${dat.globalData.dungeons.total} - - -`,

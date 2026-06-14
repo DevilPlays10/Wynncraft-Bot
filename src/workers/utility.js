@@ -117,4 +117,13 @@ function formatNumberShort(num) {
     return Number((num / 1000000000000).toFixed(1)) + "T"
 }
 
-module.exports = { CalcXPForGuildLevel, getRewardForGuildLevel, CalcMemberSlots, CalcXPperGraid, formatNumberShort, getRewardsForGuildLevelRange, Date }
+const allowGUILDIDBFS = '962855308932317204'
+const allowROLEIDBFS = '1168775281117499485'
+
+function isBFSMember(guildID, member) {
+    if (guildID !== allowGUILDIDBFS) return false
+    return member._roles.includes(allowROLEIDBFS)
+}
+
+
+module.exports = { CalcXPForGuildLevel, getRewardForGuildLevel, CalcMemberSlots, CalcXPperGraid, formatNumberShort, getRewardsForGuildLevelRange, Date, isBFSMember }

@@ -2,7 +2,7 @@ const { getLang, data: config, tokens } = require('../../../index.js')
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
 const { db } = require('../../process/db.js')
 const { WynGET } = require('../../process/wyn_api.js')
-const { CalcMemberSlots, Date: {relative}, formatNumberShort } = require('../../utility')
+const { CalcMemberSlots, Date: {relative}, formatNumberShort, isBFSMember } = require('../../utility')
 const fs = require('fs')
 
 
@@ -30,14 +30,6 @@ function isValidHex(hex) {
     return regex.test(hex);
 }
 
-const allowGUILDIDBFS = '962855308932317204'
-const allowROLEIDBFS = '1168775281117499485'
-
-function BFSToken(guildID, member) {
-    if (guildID !== allowGUILDIDBFS) return false
-    return member._roles.includes(allowROLEIDBFS)
-}
-
 async function guild(interaction) {
     const st_time = new Date().getTime()
     const msg = await interaction.deferReply({
@@ -56,7 +48,7 @@ async function guild(interaction) {
     const similar_guilds = list.status == 200 ? Object.entries(list.data).filter(ent => ent[1].prefix.toLowerCase() == guild.toLowerCase()) : []
     if (similar_guilds.length == 1) guild = similar_guilds[0][1].prefix
     //end
-    return await WynGET(prefix ? `guild/prefix/${guild}` : `guild/${guild}`, BFSToken(interaction.guildId, interaction.member) ? `Bearer ${tokens.wyn_api_GUILD}` : null).then(async (res) => {
+    return await WynGET(prefix ? `guild/prefix/${guild}` : `guild/${guild}`, isBFSMember(interaction.guildId, interaction.member) ? `Bearer ${tokens.wyn_api_GUILD}` : null).then(async (res) => {
         const dat = res.data
         console.log(dat)
         const { data: colors } = JSON.parse(fs.readFileSync(config.storage + "/process/autocomplete/colors.json"))
