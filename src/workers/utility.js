@@ -3,7 +3,7 @@ const fs = require('fs')
 
 const LEVEL_UP_REWARDS = JSON.parse(fs.readFileSync(`${data.storage}/process/enums/GuildLevelRewards.json`))
 
-const Date = {
+const Time = {
     /**
      * Current date in epochTime, Use new Date().getTime() for miliseconds
      * @returns {Integer} Epoch Time
@@ -126,4 +126,4 @@ function isBFSMember(guildID, member) {
 }
 
 
-module.exports = { CalcXPForGuildLevel, getRewardForGuildLevel, CalcMemberSlots, CalcXPperGraid, formatNumberShort, getRewardsForGuildLevelRange, Date, isBFSMember }
+module.exports = { CalcXPForGuildLevel, getRewardForGuildLevel, CalcMemberSlots, CalcXPperGraid, formatNumberShort, getRewardsForGuildLevelRange, Time, isBFSMember }

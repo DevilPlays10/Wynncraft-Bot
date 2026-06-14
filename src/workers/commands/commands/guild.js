@@ -2,7 +2,7 @@ const { getLang, data: config, tokens } = require('../../../index.js')
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
 const { db } = require('../../process/db.js')
 const { WynGET } = require('../../process/wyn_api.js')
-const { CalcMemberSlots, Date: {relative}, formatNumberShort, isBFSMember } = require('../../utility')
+const { CalcMemberSlots, Time: {relative}, formatNumberShort, isBFSMember } = require('../../utility')
 const fs = require('fs')
 
 

@@ -1,7 +1,7 @@
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
 const { data, axios, tokens } = require('../../../index.js')
 const { WynGET } = require('../../process/wyn_api.js')
-const { Date: {relative}, formatNumberShort, isBFSMember } = require('../../utility.js')
+const { Time: {relative}, formatNumberShort, isBFSMember } = require('../../utility.js')
 
 const ints = {}
 
