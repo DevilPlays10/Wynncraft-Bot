@@ -168,13 +168,17 @@ async function guild(interaction) {
             .setColor(color)
         if (terrlist.status != 200) embed3.setDescription(`An Error occured\n\`\`\`js\n${terrlist.message.split("\n")[0]}\n\`\`\``)
         if (terrlist.status == 200) {
-            const ters = Object.entries(terrlist.data).filter(ent => ent[1].guild.uuid == dat.uuid).sort((a, b) => new Date(a[1].acquired).getTime() - new Date(b[1].acquired).getTime())
+            const ters = Object.entries(terrlist.data)
+            .filter(ent => ent[1].guild.uuid == dat.uuid) // get terrs owned by this guild
+            .sort((a, b) => new Date(a[1].acquired) - new Date(b[1].acquired)) // put longest held  first
+            .sort((a, b) => b[1].hq - a[1].hq) // put hq to first
+
             if (ters.length) {
-                const t2 = ters.map(ent => `${ent[0]}: [${relative(ent[1].acquired, 'dhms', 0, 2)}]`)
+                const t2 = ters.map(ent => `${ent[0]}${ent[1].hq? ' (HQ)': ''} [${relative(ent[1].acquired, 'dhms', 0, 2)}] - ${ent[1].defences}`)
                 for (let i = 0; i < t2.length; i += 20) {
                     embed3.addFields({
                         name: i == 0 ? `Territories: (${t2.length})` : `\u200B`,
-                        value: `\`\`\`bf\n${t2.slice(0, 120).slice(i, i + 20).join("\n")}\`\`\``
+                        value: `\`\`\`bf\n${t2.slice(0, 100).slice(i, i + 20).join("\n")}\`\`\``
                     });
                 }
             } else {
