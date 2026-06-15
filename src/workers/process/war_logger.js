@@ -1,7 +1,7 @@
 const { data: config, send, client } = require('../../index.js')
 const fs = require('fs')
 const { EmbedBuilder } = require('discord.js')
-const { query: { all } } = require('../process/db.js')
+const { query: { all, run } } = require('../process/db.js')
 const { WynGET } = require('./wyn_api.js')
 const { Time: { relative } } = require('../utility')
 
@@ -32,7 +32,7 @@ async function call() {
                 if (!oldGuild.uuid || !newGuild.uuid) continue;
                 if (newGuild.uuid != oldGuild.uuid) {
 
-                    const guilds = query.all(`INSERT INTO Guild_IDS_T (name, prefix, uuid) VALUES (?, ?, ?), (?, ?, ?)
+                    const guilds = all(`INSERT INTO Guild_IDS_T (name, prefix, uuid) VALUES (?, ?, ?), (?, ?, ?)
                         ON CONFLICT(uuid) DO UPDATE SET name = excluded.name 
                         RETURNING *;`, [
                             newGuild.name, newGuild.prefix, newGuild.uuid,
@@ -74,7 +74,7 @@ async function call() {
             if (pushtoDB.length) {
                 // console.log(`inserting ${pushtoDB.length} entries`)
                 const questionMarks = pushtoDB.map(ent=>`(?, ?, ?, ?, ?, ?, ?, ?, ?)`).join(", ")
-                query.run(
+                run(
                     `INSERT INTO Territory_Changes_T (held_time, time, territory, guildID, guildTotal, previousGuildID, previousGuildTotal, hq, defence) VALUES ${questionMarks}`,
                     pushtoDB.flat(1)
                 )
@@ -159,8 +159,13 @@ async function logdisc(arg) {
             await UserData[user[0]].send({
                 embeds: [
                     new EmbedBuilder()
-                        .setTitle(':golf: Territory Captured')
-                        .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``)
+                        .setTitle(`:golf: Territory Captured${arg.prev_terr_details.hq ? ` (HQ)` : ``}`)
+                        .setDescription(
+                            `**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``
+                        )
+                        .setFields({
+                            name: "Territory Details", value: `Defence: \`${arg.prev_terr_details.defence}\`\nTreasury: \`${arg.prev_terr_details.treasury}\`${arg.prev_terr_details.hq ? `\n**Resources:**\`\`\`ml\n${arg.prev_terr_details.resources.map(ent => `+${ent.stored} ${ent.type}`).join("\n")}\`\`\`` : ``}`
+                        })
                         .setColor(0x2596be)
                         .setTimestamp()
                 ]
@@ -169,8 +174,13 @@ async function logdisc(arg) {
             await UserData[user[0]].send({
                 embeds: [
                     new EmbedBuilder()
-                        .setTitle(':green_circle: Territory Captured')
-                        .setDescription(`**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``)
+                        .setTitle(`:green_circle: Territory Captured${arg.prev_terr_details.hq ? ` (HQ)` : ''}`)
+                        .setDescription(
+                            `**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``
+                        )
+                        .setFields({
+                            name: "Territory Details", value: `Defence: \`${arg.prev_terr_details.defence}\`\nTreasury: \`${arg.prev_terr_details.treasury}\`${arg.prev_terr_details.hq ? `\n**Resources:**\`\`\`ml\n${arg.prev_terr_details.resources.map(ent => `+${ent.stored} ${ent.type}`).join("\n")}\`\`\`` : ``}`
+                        })
                         .setColor(0x7DDA58)
                         .setTimestamp()
                 ]
@@ -179,8 +189,13 @@ async function logdisc(arg) {
             await UserData[user[0]].send({
                 embeds: [
                     new EmbedBuilder()
-                        .setTitle(':red_circle: Territory Lost')
-                        .setDescription(`**${arg.terr}**\n**${arg.prev_holder.name} [${arg.prev_holder.prefix}]** (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} [${arg.capturer.prefix}] (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``)
+                        .setTitle(`:red_circle: Territory Lost${arg.prev_terr_details.hq ? ` (HQ)` : ''}`)
+                        .setDescription(
+                            `**${arg.terr}**\n**${arg.prev_holder.name} [${arg.prev_holder.prefix}]** (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} [${arg.capturer.prefix}] (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``
+                        )
+                        .setFields({
+                            name: "Territory Details", value: `Defence: \`${arg.prev_terr_details.defence}\`\nTreasury: \`${arg.prev_terr_details.treasury}\`${arg.prev_terr_details.hq ? `\n**Resources:**\`\`\`ml\n${arg.prev_terr_details.resources.map(ent => `+${ent.stored} ${ent.type}`).join("\n")}\`\`\`` : ``}`
+                        })
                         .setColor(0xE4080A)
                         .setTimestamp()
                 ]
