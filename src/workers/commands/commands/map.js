@@ -8,7 +8,7 @@ const { WynGET } = require('../../process/wyn_api.js')
 const CANVAS_WIDTH = 1009;
 const CANVAS_HEIGHT = 1604;
 
-const overlayAlpha = 0.4;            // your so transparent
+const territory_box_transparency = 0.4;            // your so transparent
 const borderWidth = 1;             // boy he thick
 
 const shrinkFactorX = 0.925;          // shrink
@@ -100,7 +100,7 @@ async function drawMap(connectionData, data) {
     const color_ = colors.find(ent => ent[0] === t.guild?.name?.trim())
     const color = color_ ? isValidHex(color_[1]) ? color_[1] : noColorFOundcolor : noColorFOundcolor
     ctx.fillStyle = color;
-    ctx.globalAlpha = overlayAlpha;
+    ctx.globalAlpha = territory_box_transparency;
     ctx.fillRect(x1, y1, width, height);
 
     ctx.globalAlpha = 1;
@@ -113,7 +113,14 @@ async function drawMap(connectionData, data) {
     const fontSize = Math.max(10, Math.min(10, Math.min(width, height) * 0.45));
 
     ctx.font = `bold ${fontSize}px sans-serif`;
-    ctx.fillStyle = (new Date() - new Date(t.acquired)) / 1000 > 600 ? 'white' : '#ff0000ff'
+    // ctx.fillStyle = (new Date() - new Date(t.acquired)) / 1000 > 600 ? 'white' : '#ff0000ff'
+    ctx.fillStyle = (() => {
+      if (t.hq) {
+        return 'rgb(233, 198, 102)'
+      } else if (((new Date() - new Date(t.acquired)) / 1000) < 600) {
+        return 'rgb(255, 0, 0)'
+      } else return 'rgb(255, 255, 255)'
+    })()
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(t.guild.prefix ?? '?', midX, midY);
