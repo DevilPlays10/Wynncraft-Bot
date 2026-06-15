@@ -1,7 +1,7 @@
 const fs = require('fs')
 const { WynGET } = require('./wyn_api')
 const { data, send } = require('../../index.js')
-const { queueToDB, db } = require('./db')
+const { query: { run, all } } = require('./db')
 const { EmbedBuilder } = require('discord.js')
 const { CalcXPperGraid, formatNumberShort, getRewardsForGuildLevelRange } = require('../utility')
 
@@ -60,7 +60,7 @@ async function call() {
             const comp = await compare(guild, mapMembers(members), res.data)
 
 
-            queueToDB(`INSERT OR REPLACE INTO Guilds (time, prefix, members, level, srRanks, name, wars, online) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            run(`INSERT OR REPLACE INTO Guilds (time, prefix, members, level, srRanks, name, wars, online) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     (new Date() / 1000).toFixed(),
                     guild,
@@ -232,7 +232,7 @@ async function compare(guild, members, data) {
     // const membersUUIDS = {} // all members and their UUID {UUID: Name ... }
     let guildRaidsRaw = {};
     const changes = { members: [], rank: [], level: [], gname: [], sr: [], graids: [] }
-    const dbDATA = await db.all(`SELECT * FROM Guilds WHERE prefix = ?`, [guild])
+    const dbDATA = all(`SELECT * FROM Guilds WHERE prefix = ?`, [guild])
     if (!dbDATA.length) return { proceed: false, }
 
     const membersOLD = JSON.parse(dbDATA[0].members)

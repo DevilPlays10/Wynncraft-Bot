@@ -2,7 +2,7 @@ const { WynGET } = require('../../process/wyn_api')
 const { updateVariable, data, send } = require('../../..') //wtf i can do this?>??
 const { EmbedBuilder, PermissionsBitField, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ActionRowBuilder } = require('discord.js')
 const fs = require('fs')
-const { queueToDB } = require('../../process/db.js')
+const { query: { run } } = require('../../process/db.js')
 
 module.exports = { add, remove, menu }
 
@@ -138,7 +138,7 @@ async function menu(int) {
     console.log(guildTrackers.length ? `Not deleting database entry as other servers (${guildTrackers.length}) are tracking the guild ${guild}` : `deleting the db entry as no other guilds track ${guild}`)
 
     if (guildTrackers.length === 0) {
-        queueToDB(`DELETE FROM Guilds WHERE prefix = "${guild}"`)
+        run(`DELETE FROM Guilds WHERE prefix = "${guild}"`)
     }
 
     await int.message.edit({ components: server[int.guildId] ? [generateStringMenu(server[int.guildId])] : [] })

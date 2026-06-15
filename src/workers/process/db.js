@@ -1,100 +1,20 @@
-const sqlite3 = require('sqlite3')
-const { data, updateVariable, log_str } = require('../../index.js')
-const fs = require('fs')
+const { data } = require('../../index.js')
 
-let {queue} = JSON.parse(fs.readFileSync(data.storage+`/process/db_inject.json`))
+const sqlite3 = require("better-sqlite3")
+const database = new sqlite3(`${data.storage}/database.db`, { timeout: 5000 }); // 5 seconds is so if db is locked the function will wait for it to be unlocked for 5 s before erroring
 
-/**
- * Queue a SQLITE cmd to be run, stored in disk
- * @param {String} cmd sqlite command to execute
- * @param {Array} data  data to use in that cmd
- */
-function queueToDB(cmd, store) {
-  queue.push([cmd, store])
-  updateVariable(data.storage+`/process/db_inject.json`, 'queue', queue)
-}
+database.pragma("journal_mode = WAL"); // creates copy of db so faster read werite i think
+database.pragma("foreign_keys = ON");
 
-push()
-setInterval(() => {
-  push()
-}, 1000*60*1);
+const query = {
+  all: (sql, params = []) => database.prepare(sql).all(params),
+  get: (sql, params = []) => database.prepare(sql).get(params),
+  run: (sql, params = []) => {
+    const result = database.prepare(sql).run(params);
+    return { id: result.lastInsertRowid, changes: result.changes };
+  },
+  transaction: (fn) => database.transaction(fn)(),
+};
 
-function push() {
-  if (!queue.length) return
-  try {
-      const sqdb = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
-      if (err) return
 
-      // log_str(`[DB Insertion] Queued DB Insertion triggered with ${queue.length} entries`)
-      // console.log(`db insertion happened, ${queue.length} entries`)
-
-      for (cmd of queue) {
-
-        sqdb.run(cmd[0], cmd[1], err => {
-          if (!err) return; 
-
-          log_str(`[DB] Error occured during DB [${cmd}] -> [ ${err} ]`)
-          console.log(err)
-        })
-        
-      }
-
-      sqdb.close();
-
-      queue = []
-      updateVariable(data.storage+`/process/db_inject.json`, 'queue', [])
-    });
-  } catch(e) {
-    log_str(`[DB] Error occured during DB, entries: ${queue.length}`)
-    // console.log(e)
-  }
-}
-
-const db = {
-  // @Deprecated
-  // run: (list=>{
-  //   return new Promise((resolve, reject)=> {
-  //       commands.push(...list)
-  //       const db = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
-  //       if (err) reject(err)
-  //       for (cmd of commands) {
-  //         db.run(cmd[0], cmd[1])
-  //       }
-  //       db.close((err) => {
-  //         if (err) reject(err)
-  //         resolve()
-  //       });
-  //       commands = []
-  //     });
-  //   })
-  // }),
-  // @Deprecated
-  // run_each: ((command, args)=>{
-  //   return new Promise((resolve, reject)=> {
-  //     const db = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
-  //       if (err) reject(err)
-  //       for (arg_ of args) {
-  //         db.run(command, arg_)
-  //       }
-  //       db.close((err) => {
-  //         if (err) reject(err)
-  //         resolve()
-  //       });
-  //     });
-  //   })
-  // }),
-  all: ((com, args)=>{
-      return new Promise((resolve, reject) => {
-        const db = new sqlite3.Database(`${data.storage}/database.db`, (err) => {
-          if (err) return reject(err);
-        });
-        db.all(com, args, (err, rows) => {
-            db.close();
-            if (err) return reject(err);
-            resolve(rows);
-        });
-    });
-  })
-}
-
-module.exports = {db, queueToDB}
+module.exports = { query }

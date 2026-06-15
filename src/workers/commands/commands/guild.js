@@ -1,8 +1,8 @@
 const { getLang, data: config, tokens } = require('../../../index.js')
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js')
-const { db } = require('../../process/db.js')
+const { query: { all } } = require('../../process/db.js')
 const { WynGET } = require('../../process/wyn_api.js')
-const { CalcMemberSlots, Time: {relative}, formatNumberShort, isBFSMember } = require('../../utility')
+const { CalcMemberSlots, Time: { relative }, formatNumberShort, isBFSMember } = require('../../utility')
 const fs = require('fs')
 
 
@@ -82,8 +82,8 @@ async function guild(interaction) {
         const on_list = mlist.filter(ent => ent.online).map(ent => `[${ent.rank.toUpperCase()}] ${ent.name} (${ent.server})`)
         const embed1 = new EmbedBuilder()
             .setTitle(`${dat.name}`)
-            .setFooter({ text: `Page 1 / 6 - Request took ${new Date()-st_time}ms` })
-            .setDescription(`UUID: \`${dat.uuid}\`\n\`\`\`ml\nName: ${dat.name} (${dat.prefix})\nOwner: ${Object.getOwnPropertyNames(dat.members.owner).join("")}\nMembers: ${dat.members.total} / ${CalcMemberSlots(dat.level)}\nLevel: ${dat.level} (${dat.xpPercent}%)\nCreated: ${jc}\nAge: ${relative(made_date, 'ydhms', 0, 3)}\nWar Count: ${dat.wars ?? 0}\nTerritories: ${dat.territories}\`\`\`\n**Online Members: (${dat.online})**\n\`\`\`ml\n${dat.online ? `${on_list.slice(0, 50).join("\n")}${dat.online == on_list.length ? `` : `\n(+${dat.online - on_list.length} in Streamer)`}` : `No members online :(`}\`\`\``)
+            .setFooter({ text: `Page 1 / 6 - Request took ${new Date() - st_time}ms` })
+            .setDescription(`UUID: \`${dat.uuid}\`\n\`\`\`ml\nName: ${dat.name} (${dat.prefix})\nOwner: ${Object.getOwnPropertyNames(dat.members.owner).join("")}\nMembers: ${dat.members.total} / ${CalcMemberSlots(dat.level)}\nLevel: ${dat.level} (${dat.xpPercent}%)\nCreated: ${jc}\nAge: ${relative(made_date, 'ydhms', 0, 3)}\nWar Count: ${dat.wars ?? 0}\nTerritories: ${dat.territories}\`\`\`\n**Online Members: (${dat.online})**\n\`\`\`ml\n${dat.online ? `${on_list.slice(0, 50).join("\n")}${dat.online == on_list.length ? `` : `\n(+${dat.online - on_list.length} hidden)`}` : `No members online :(`}\`\`\``)
             .setColor(color)
         //page 2
         const [owner] = mlist.filter(ent => ent.rank == "owner")
@@ -110,12 +110,12 @@ async function guild(interaction) {
         // page guild raids 
 
         let total = 0
-        const topRaiders = (mlist.map(ent => ([ent.name, ent?.globalData?.guildRaids?.total??0])).sort((a, b) => b[1] - a[1]))
+        const topRaiders = (mlist.map(ent => ([ent.name, ent?.globalData?.guildRaids?.total ?? 0])).sort((a, b) => b[1] - a[1]))
         let graidSeperates = {}
 
         mlist.map(ent => ent?.globalData?.guildRaids).forEach(ent => { // divide the numbers by 4 coz takes 4 members for a graid ykykyk
-            if (ent ==null) return; // cpntinue doesnt work in a foreach since it is a function
-            total += ent.total? ent.total / 4 : 0
+            if (ent == null) return; // cpntinue doesnt work in a foreach since it is a function
+            total += ent.total ? ent.total / 4 : 0
             for (const [raid, count] of Object.entries(ent.list)) {
                 if (!graidSeperates[raid]) graidSeperates[raid] = 0
                 graidSeperates[raid] += count / 4
@@ -124,7 +124,7 @@ async function guild(interaction) {
 
         // round everything
         total = Math.round(total)
-        graidSeperates = Object.fromEntries(Object.entries(graidSeperates).map(ent=> [ent[0], Math.round(ent[1])]))
+        graidSeperates = Object.fromEntries(Object.entries(graidSeperates).map(ent => [ent[0], Math.round(ent[1])]))
 
         const entries = Object.entries(graidSeperates).map(ent => {
             return { raid: raidNicks[ent[0]], count: ent[1], color: raidColors[ent[0]] ?? raidColors[404] }
@@ -169,12 +169,12 @@ async function guild(interaction) {
         if (terrlist.status != 200) embed3.setDescription(`An Error occured\n\`\`\`js\n${terrlist.message.split("\n")[0]}\n\`\`\``)
         if (terrlist.status == 200) {
             const ters = Object.entries(terrlist.data)
-            .filter(ent => ent[1].guild.uuid == dat.uuid) // get terrs owned by this guild
-            .sort((a, b) => new Date(a[1].acquired) - new Date(b[1].acquired)) // put longest held  first
-            .sort((a, b) => b[1].hq - a[1].hq) // put hq to first
+                .filter(ent => ent[1].guild.uuid == dat.uuid) // get terrs owned by this guild
+                .sort((a, b) => new Date(a[1].acquired) - new Date(b[1].acquired)) // put longest held  first
+                .sort((a, b) => b[1].hq - a[1].hq) // put hq to first
 
             if (ters.length) {
-                const t2 = ters.map(ent => `${ent[0]}${ent[1].hq? ' (HQ)': ''} [${relative(ent[1].acquired, 'dhms', 0, 2)}] - ${ent[1].defences}`)
+                const t2 = ters.map(ent => `${ent[0]}${ent[1].hq ? ' (HQ)' : ''} [${relative(ent[1].acquired, 'dhms', 0, 2)}] - ${ent[1].defences}`)
                 for (let i = 0; i < t2.length; i += 20) {
                     embed3.addFields({
                         name: i == 0 ? `Territories: (${t2.length})` : `\u200B`,
@@ -186,11 +186,21 @@ async function guild(interaction) {
             }
         }
         //pahe terr history
-        const uuid = res.data.uuid.replace(/-/g, '');
-        const terr_data = await db.all(`SELECT * FROM Territories WHERE GuildUUID = ? OR PreviousGuildUUID = ? ORDER BY Time DESC LIMIT 20`, [uuid, uuid])
-        const g_ter = terr_data.map(ent => `${ent.GuildUUID == dat.uuid.replace(/-/g, '') ?
-            `+ (${ent.GuildTotal - 1} > ${ent.GuildTotal}) ${ent.Territory}\n+ From [${ent.PreviousGuildPrefix}] (${ent.PreviousGuildTotal + 1} > ${ent.PreviousGuildTotal})\n+ Held ${relative(ent.Held_For * 1000, 'dhms', 1, 1)} - ${relative(ent.Time * 1000, 'dhms', 0, 2)} ago` :
-            `- (${ent.PreviousGuildTotal + 1} > ${ent.PreviousGuildTotal}) ${ent.Territory}\n- To [${ent.GuildPrefix}] (${ent.GuildTotal - 1} > ${ent.GuildTotal})\n- Held ${relative(ent.Held_For * 1000, 'dhms', 1, 1)} - ${relative(ent.Time * 1000, 'dhms', 0, 2)} ago`
+        const guild_uuid = res.data.uuid;
+
+        const terr_data = all(`SELECT Territory_Changes_T.*, 
+                capture.uuid AS capture_uuid, 
+                capture.prefix AS capture_prefix, 
+                loser.uuid AS loser_uuid, 
+                loser.prefix AS loser_prefix
+            FROM Territory_Changes_T
+            LEFT JOIN Guild_IDS_T capture ON Territory_Changes_T.guildID = capture.id
+            LEFT JOIN Guild_IDS_T loser ON Territory_Changes_T.previousGuildID = loser.id
+            WHERE (capture.uuid = ? OR loser.uuid = ?) ORDER BY time DESC LIMIT 20;`, [guild_uuid, guild_uuid]) ?? []
+
+        const g_ter = terr_data.map(ent => `${ent.capture_uuid == guild_uuid ?
+            `+ (${ent.guildTotal - 1} > ${ent.guildTotal}) ${ent.territory}${ent.hq? '(HQ)': ''}\n+ From [${ent.loser_prefix}] (${ent.previousGuildTotal + 1} > ${ent.previousGuildTotal})\n+ Held ${relative(ent.held_time * 1000, 'dhms', 1, 1)} - ${relative(ent.time * 1000, 'dhms', 0, 2)} ago` :
+            `- (${ent.previousGuildTotal + 1} > ${ent.previousGuildTotal}) ${ent.territory}${ent.hq? '(HQ)': ''}\n- To [${ent.capture_prefix}] (${ent.guildTotal - 1} > ${ent.guildTotal})\n- Held ${relative(ent.held_time * 1000, 'dhms', 1, 1)} - ${relative(ent.time * 1000, 'dhms', 0, 2)} ago`
             }`)
         const embed4 = new EmbedBuilder()
             .setTitle(`${dat.prefix} War logs:`)

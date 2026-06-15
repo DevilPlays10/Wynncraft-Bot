@@ -1,11 +1,18 @@
 const { data: config, send, client } = require('../../index.js')
 const fs = require('fs')
 const { EmbedBuilder } = require('discord.js')
-const { queueToDB } = require('../process/db.js')
+const { query: { all } } = require('../process/db.js')
 const { WynGET } = require('./wyn_api.js')
 const { Time: { relative } } = require('../utility')
 
 let obj = {}
+const defenceIDS = [ // do not change this is used to get id when inserting into db
+    "VERY_LOW",
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+    "VERY_HIGH"
+]
 
 module.exports = (async () => {
     call()
@@ -15,47 +22,64 @@ module.exports = (async () => {
 })()
 
 async function call() {
-    await WynGET(`guild/list/territory`).then(res => {
+    await WynGET(`guild/list/territory`).then(async res => {
         if (res.status != 200) return
         if (Object.values(obj).length) {
             const valuesARR = Object.values(res.data).map(ent => ent.guild)
-            const pushtoDB = []
+            let pushtoDB = []
             for (ent of Object.entries(res.data)) {
-                if (!obj[ent[0]].guild.uuid || !ent[1].guild.uuid) continue;
-                if (ent[1].guild.uuid != obj[ent[0]].guild.uuid) {
+                const [newGuild, oldGuild] = [ent[1].guild, obj[ent[0]].guild]
+                if (!oldGuild.uuid || !newGuild.uuid) continue;
+                if (newGuild.uuid != oldGuild.uuid) {
+
+                    const guilds = query.all(`INSERT INTO Guild_IDS_T (name, prefix, uuid) VALUES (?, ?, ?), (?, ?, ?)
+                        ON CONFLICT(uuid) DO UPDATE SET name = excluded.name 
+                        RETURNING *;`, [
+                            newGuild.name, newGuild.prefix, newGuild.uuid,
+                            oldGuild.name, oldGuild.prefix, oldGuild.uuid
+                        ])
+
+                    const old_territory = obj[ent[0]]    // ent[0] is new territory but not used so not defined
                     const out = {
                         terr: ent[0],
-                        capturer: ent[1].guild,
-                        capturer_total: valuesARR.filter(guild => guild.uuid == ent[1].guild.uuid).length,
-                        prev_holder: obj[ent[0]].guild,
-                        prev_holder_total: valuesARR.filter(guild => guild.uuid == obj[ent[0]].guild.uuid).length,
-                        timeHeld: Number(((new Date() - new Date(obj[ent[0]].acquired)) / 1000).toFixed()),
+                        db: guilds,
+                        capturer: newGuild,
+                        capturer_total: valuesARR.filter(guild => guild.uuid == newGuild.uuid).length,
+                        prev_holder: oldGuild,
+                        prev_holder_total: valuesARR.filter(guild => guild.uuid == oldGuild.uuid).length,
+                        timeHeld: Number(((new Date() - new Date(old_territory.acquired)) / 1000).toFixed()),
                         prev_terr_details: {
-                            hq: obj[ent[0]].hq,
-                            treasury: obj[ent[0]].treasury,
-                            defence: obj[ent[0]].defences,
-                            resources: obj[ent[0]].resources
+                            hq: old_territory.hq,
+                            treasury: old_territory.treasury,
+                            defence: old_territory.defences,
+                            resources: old_territory.resources
                         }
                     }
                     pushtoDB.push(out)
                     logdisc(out)
                 }
             }
-            if (pushtoDB.length) pushtoDB.map(d => [
+            pushtoDB = pushtoDB.map(d => [
                 d.timeHeld,
                 Math.floor(new Date().getTime() / 1000),
                 d.terr,
-                d.capturer.uuid.replace(/-/g, ''),
-                d.capturer.name,
-                d.capturer.prefix,
+                d.db[0].id,
                 d.capturer_total,
-                d.prev_holder.uuid.replace(/-/g, ''),
-                d.prev_holder.name,
-                d.prev_holder.prefix,
-                d.prev_holder_total
-            ]).forEach(element => {
-                queueToDB(`INSERT INTO Territories (Held_For, Time, Territory, GuildUUID, GuildName, GuildPrefix, GuildTotal, PreviousGuildUUID, PreviousGuildName, PreviousGuildPrefix, PreviousGuildTotal)    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, element)
-            });
+                d.db[1].id,
+                d.prev_holder_total,
+                d.prev_terr_details.hq? 1: 0,
+                defenceIDS.indexOf(d.prev_terr_details.defence)
+            ])
+
+            if (pushtoDB.length) {
+                // console.log(`inserting ${pushtoDB.length} entries`)
+                const questionMarks = pushtoDB.map(ent=>`(?, ?, ?, ?, ?, ?, ?, ?, ?)`).join(", ")
+                query.run(
+                    `INSERT INTO Territory_Changes_T (held_time, time, territory, guildID, guildTotal, previousGuildID, previousGuildTotal, hq, defence) VALUES ${questionMarks}`,
+                    pushtoDB.flat(1)
+                )
+            }
+
             obj = res.data
         } else obj = res.data
     }).catch(e => {
@@ -79,7 +103,6 @@ async function AddUsers(users) {
 }
 
 async function logdisc(arg) {
-    console.log(arg)
     const track = JSON.parse(fs.readFileSync(config.storage + "/process/terr_track.json"))
     for (const guild of Object.values(track.server)) for (const tracker of guild) {
         if (tracker.guild == '<global>' && (tracker.terr == arg.terr || tracker.terr == '<global>')) {
@@ -88,15 +111,10 @@ async function logdisc(arg) {
                     new EmbedBuilder()
                         .setTitle(`:golf: Territory Captured${arg.prev_terr_details.hq ? ` (HQ)` : ``}`)
                         .setDescription(
-                            `**${arg.terr}**
-                            ${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})
-                            Held: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``
+                            `**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``
                         )
                         .setFields({
-                            name: "Territory Details", value:
-                            `Defence: \`${arg.prev_terr_details.defence}\`
-                            Treasury: \`${arg.prev_terr_details.treasury}\`\
-                            ${arg.prev_terr_details.hq ? `\n**Resources:**    \`\`\`ml\n${arg.prev_terr_details.resources.map(ent => `+${ent.stored} ${ent.type}`).join("\n")}\`\`\`` : ``}`
+                            name: "Territory Details", value: `Defence: \`${arg.prev_terr_details.defence}\`\nTreasury: \`${arg.prev_terr_details.treasury}\`${arg.prev_terr_details.hq ? `\n**Resources:**\`\`\`ml\n${arg.prev_terr_details.resources.map(ent => `+${ent.stored} ${ent.type}`).join("\n")}\`\`\`` : ``}`
                         })
                         .setColor(0x2596be)
                         .setTimestamp()
@@ -108,15 +126,10 @@ async function logdisc(arg) {
                     new EmbedBuilder()
                         .setTitle(`:green_circle: Territory Captured${arg.prev_terr_details.hq ? ` (HQ)` : ''}`)
                         .setDescription(
-                            `**${arg.terr}**
-                            ${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})
-                            Held: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``
+                            `**${arg.terr}**\n${arg.prev_holder.name} [${arg.prev_holder.prefix}] (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> **${arg.capturer.name} [${arg.capturer.prefix}]** (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``
                         )
                         .setFields({
-                            name: "Territory Details", value:
-                            `Defence: \`${arg.prev_terr_details.defence}\`
-                            Treasury: \`${arg.prev_terr_details.treasury}\`\
-                            ${arg.prev_terr_details.hq ? `\n**Resources:**    \`\`\`ml\n${arg.prev_terr_details.resources.map(ent => `+${ent.stored} ${ent.type}`).join("\n")}\`\`\`` : ``}`
+                            name: "Territory Details", value: `Defence: \`${arg.prev_terr_details.defence}\`\nTreasury: \`${arg.prev_terr_details.treasury}\`${arg.prev_terr_details.hq ? `\n**Resources:**\`\`\`ml\n${arg.prev_terr_details.resources.map(ent => `+${ent.stored} ${ent.type}`).join("\n")}\`\`\`` : ``}`
                         })
                         .setColor(0x7DDA58)
                         .setTimestamp()
@@ -128,15 +141,10 @@ async function logdisc(arg) {
                     new EmbedBuilder()
                         .setTitle(`:red_circle: Territory Lost${arg.prev_terr_details.hq ? ` (HQ)` : ''}`)
                         .setDescription(
-                            `**${arg.terr}**
-                            **${arg.prev_holder.name} [${arg.prev_holder.prefix}]** (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} [${arg.capturer.prefix}] (${arg.capturer_total - 1} > ${arg.capturer_total})
-                            Held: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``
+                            `**${arg.terr}**\n**${arg.prev_holder.name} [${arg.prev_holder.prefix}]** (${arg.prev_holder_total + 1} > ${arg.prev_holder_total}) --> ${arg.capturer.name} [${arg.capturer.prefix}] (${arg.capturer_total - 1} > ${arg.capturer_total})\nHeld: \`${relative(arg.timeHeld * 1000, 'dhms', 1, 3)}\``
                         )
                         .setFields({
-                            name: "Territory Details", value:
-                            `Defence: \`${arg.prev_terr_details.defence}\`
-                            Treasury: \`${arg.prev_terr_details.treasury}\`\
-                            ${arg.prev_terr_details.hq ? `\n**Resources:**    \`\`\`ml\n${arg.prev_terr_details.resources.map(ent => `+${ent.stored} ${ent.type}`).join("\n")}\`\`\`` : ``}`
+                            name: "Territory Details", value: `Defence: \`${arg.prev_terr_details.defence}\`\nTreasury: \`${arg.prev_terr_details.treasury}\`${arg.prev_terr_details.hq ? `\n**Resources:**\`\`\`ml\n${arg.prev_terr_details.resources.map(ent => `+${ent.stored} ${ent.type}`).join("\n")}\`\`\`` : ``}`
                         })
                         .setColor(0xE4080A)
                         .setTimestamp()
