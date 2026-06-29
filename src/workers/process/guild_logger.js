@@ -189,40 +189,6 @@ async function proceed(guild, comp) {
                         )
                     }
                     break;
-
-                case 'GRaids':
-                    if (comp.graids.length) {
-                        const raidEmbeds = comp.graids.map(raid => {
-
-                            const embed = new EmbedBuilder()
-                                .setTitle(raid.raid)
-                                .setTimestamp()
-                                .addFields([
-                                    { 
-                                        name: "**Members:**", value: `${raid.members.join(', ').replace('_', "\\_")}`
-                                    },
-                                    { 
-                                        name: "**Rewards:**", value: `- 2 Aspects\n- 4096 Emeralds\n- ${formatNumberShort(CalcXPperGraid(guild.level))} XP`
-                                    }
-                                ])
-                                .setColor(color)
-                            if (RAID_ICONS[raid.raid]) embed.setThumbnail(RAID_ICONS[raid.raid])
-                            return embed
-                        })
-
-                        while (raidEmbeds.length) {
-
-                            const embeds = raidEmbeds.splice(0, 8)
-
-                            await send(inServerTracker.channel,
-                                {
-                                    embeds,
-                                }
-                            )
-
-                        }
-                    }
-                    break;
             }
         }
     }
@@ -279,32 +245,8 @@ async function compare(guild, members, data) {
             changes.members.push({ uuid: mem_old.uuid, name: mem_old.name, type: 'left', time: mem_old.joined, rank: mem_old.rank })
 
         // guild raid stuff
-        } else if ((totalRaidsMembers(members) - totalRaidsMembers(membersOLD)) < MAX_POSSIBLE_RAIDS_WITHIN_REQUESTS) {  // check total raids done by all members, if greater than threshold, skip BECAUAE SWYNNC RAFT IS FUCKING RETARDED AND RANDOMLY SENDS MEMBERS GRAIDS AS 0?????
-            // compare guild raid if user already existed in the guild
-
-            const mem_new = newUser_[0] // the new data gathered for the user
-
-            if ( (mem_old.globalData?.guildRaids?.total & mem_new.globalData?.guildRaids?.total)&(mem_old.globalData?.guildRaids?.total != mem_new.globalData?.guildRaids?.total)) { // if the prev and new graid values dont match, that means they did graid
-                console.log('committing!', mem_old.globalData?.guildRaids, mem_new.globalData?.guildRaids)
-                for (const [raid, completions] of Object.entries(mem_old.globalData?.guildRaids?.list)) {
-                    const newCompletions = mem_new.globalData?.guildRaids?.list[raid]
-
-                    if (completions == newCompletions) continue;
-
-                    if (!guildRaidsRaw[raid]) guildRaidsRaw[raid] = {}
-
-                    console.log(mem_old.name, newCompletions - completions)
-
-                    guildRaidsRaw[raid][mem_old.name] = newCompletions - completions
-                }
-
-                console.log(guildRaidsRaw)
-
-            }
-
         }
     })
-    changes.graids = groupGuildRaids(guildRaidsRaw)
 
     // console.log((totalRaidsMembers(members) - totalRaidsMembers(membersOLD)))
     // console.log(guildRaidsRaw)
@@ -326,47 +268,4 @@ async function compare(guild, members, data) {
     }
 
     return { proceed: !!Object.values(changes).flat(1).length, ...changes }
-}
-
-/**
- * return total raids done using a membersArray
- * @param {Array} members 
- * @returns 
- */
-function totalRaidsMembers(members) {
-    let total = 0
-    members.forEach(ent => {
-        total += ent?.globalData?.guildRaids?.total??0
-    })
-    return total
-}
-
-/**
- * group guild raid completions into actual graids
- * @param {*} data { RaidName: {uuid1: num, uuid2: num ... } } 
- * @returns [ { name: raidname, members: [] } ... ]
- */
-function groupGuildRaids(data) {
-
-    let result = []
-
-    for (const [raidName, uuids] of Object.entries(data)) {
-
-        while (Object.values(uuids).length >= 4) {
-
-            // pick 4 unique players, lower their count until 0 then delete
-            const group = Object.entries(uuids).slice(0, 4).map(([uuid]) => {
-                uuids[uuid]--
-                if (uuids[uuid] == 0) delete uuids[uuid]
-                return uuid
-            });
-
-            result.push({
-                members: group,
-                raid: raidName
-            })
-        }
-    }
-
-    return result
 }

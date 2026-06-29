@@ -52,7 +52,7 @@ const commands = [
         required: true,
         choices: [
           {name: "Global Changes", value: "All"},
-          {name: "Guild Raids", value: "GRaids"}
+          // {name: "Guild Raids", value: "GRaids"}
         ]
       }
     ]
