@@ -139,7 +139,7 @@ function isValidHex(hex) {
 module.exports = (async int => {
   const st_time = new Date()
   await int.deferReply()
-  return WynGET(`guild/list/territories`).then(async ent => {
+  return WynGET(`guild/list/territories`, null, true).then(async ent => {
     const buffer = await drawMap(
       JSON.parse(fs.readFileSync(`${config.storage}/process/enum_terr.json`, 'utf-8')),
       ent.data
