@@ -1,9 +1,9 @@
 const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
 const { data: config } = require('../../../index.js');
-const { EmbedBuilder, AttachmentBuilder } = require('discord.js')
+const { EmbedBuilder, MessageFlags, ContainerBuilder, ButtonStyle } = require('discord.js')
 const { WynGET } = require('../../process/wyn_api.js')
-
+const { fillTextWithTwemoji } = require("node-canvas-with-twemoji-and-discord-emoji");
 
 const CANVAS_WIDTH = 1009;
 const CANVAS_HEIGHT = 1604;
@@ -112,16 +112,21 @@ async function drawMap(connectionData, data) {
     const midY = y1 + height / 2;
     const fontSize = Math.max(10, Math.min(10, Math.min(width, height) * 0.45));
 
-    ctx.font = `bold ${fontSize}px sans-serif`;
-    // ctx.fillStyle = (new Date() - new Date(t.acquired)) / 1000 > 600 ? 'white' : '#ff0000ff'
     ctx.fillStyle = (() => {
-      if (t.hq) {
-        return 'rgb(233, 198, 102)'
-      } else if (((new Date() - new Date(t.acquired)) / 1000) < 600) {
+      if (((new Date() - new Date(t.acquired)) / 1000) < 600) {
         return 'rgb(255, 0, 0)'
       } else return 'rgb(255, 255, 255)'
     })()
     ctx.textAlign = 'center';
+
+    if (t.hq) {
+      ctx.font = `bold ${fontSize + 2}px "Noto Color Emoji", sans-serif`;
+      ctx.textBaseline = 'bottom';
+      // ctx.fillText("👑", midX, midY - 5); // fix later
+      await fillTextWithTwemoji(ctx, "👑", midX, midY - 5);
+    }
+
+    ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.textBaseline = 'middle';
     ctx.fillText(t.guild.prefix ?? '?', midX, midY);
   }
@@ -135,34 +140,79 @@ function isValidHex(hex) {
   return regex.test(hex);
 }
 
+async function handle(st_time) {
 
-module.exports = (async int => {
+  const wynncrap = await WynGET(`guild/list/territories`, null, true).catch(error => error)
+  if (wynncrap.status !== 200) return `Wyncrap api is throwing, status code: \`${wynncrap.status}\``
+
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      t => t.setContent(`### Territory Map`),
+      t => t.setContent(`Updated <t:${Math.round(st_time / 1000)}:R>`)
+    )
+    .addSeparatorComponents(s => s)
+
+    .addMediaGalleryComponents({
+      items: [
+        { media: { url: `attachment://roasted_map.png` }, description: "territory map for the number one minecraft massive multiplayer online role play game wynncrap" },
+      ]
+    })
+    .addSeparatorComponents(s => s)
+
+    .addSectionComponents(
+      s =>
+        s.addTextDisplayComponents(
+          t => t.setContent("Get latest territory map")
+        ).setButtonAccessory(
+          b => b.setCustomId("map_refresh").setStyle(ButtonStyle.Secondary).setLabel("Refresh")
+        )
+    )
+
+  const buffer = await drawMap(
+    JSON.parse(fs.readFileSync(`${config.storage}/process/enum_terr.json`, 'utf-8')),
+    wynncrap.data
+  )
+
+  return {
+    components: [container],
+    flags: MessageFlags.IsComponentsV2,
+    files: [{
+      name: "roasted_map.png",
+      attachment: buffer
+    }]
+  }
+}
+
+module.exports.command = (async int => {
   const st_time = new Date()
   await int.deferReply()
-  return WynGET(`guild/list/territories`, null, true).then(async ent => {
-    const buffer = await drawMap(
-      JSON.parse(fs.readFileSync(`${config.storage}/process/enum_terr.json`, 'utf-8')),
-      ent.data
-    )
-    const attachment = new AttachmentBuilder(buffer, { name: 'roasted.png' })
-
-    return {
-      embeds: [
-        new EmbedBuilder()
-          .setTitle('Wynncraft Territory Map')
-          .setImage('attachment://roasted.png')
-          .setFooter({ text: `Request took ${new Date() - st_time}ms` })
-      ], files: [attachment]
-    }
-  }).catch(e => {
-    console.log(e)
+  try {
+    const response = await handle(st_time)
+    return response
+  } catch (error) {
     return {
       embeds: [
         new EmbedBuilder()
           .setTitle('An Error occured :(')
           .setDescription(`\`\`\`js\n${e.stack.split('\n')[0]}\`\`\``)
-          .setFooter({ text: `Request took ${new Date() - st_time}ms` })
       ]
     }
-  })
+  }
+})
+
+module.exports.button = (async int => {
+  const st_time = new Date()
+  await int.deferUpdate()
+  try {
+    const response = await handle(st_time)
+    await int.editReply(response)
+  } catch (error) {
+    await int.followUp({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle('An Error occured :(')
+          .setDescription(`\`\`\`js\n${e.stack.split('\n')[0]}\`\`\``)
+      ]
+    })
+  }
 })

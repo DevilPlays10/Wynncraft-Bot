@@ -16,7 +16,8 @@
     "better-sqlite3": "^12.10.1",
     "canvas": "^3.1.2",
     "discord-api-types": "^0.37.115",
-    "discord.js": "^14.17.3",
+    "discord.js": "^14.27.0",
+    "node-canvas-with-twemoji-and-discord-emoji": "^1.2.2",
     "node-schedule": "^2.1.1"
   }
 }

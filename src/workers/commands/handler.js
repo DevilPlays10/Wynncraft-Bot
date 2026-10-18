@@ -9,17 +9,18 @@ const cmd_guild_tracker = require('./commands/guild_tracker')
 
 const autoComplete = require('./autocomplete.js')
 
-const {log_str} = require('../../index.js')
+const { log_str } = require('../../index.js')
 
 const cmd = {
-    3: {
-      "guild_cmd_button1": cmd_guild.buttons,
-      "guild_cmd_button2": cmd_guild.buttons,
-      "player_cmd_button1": cmd_player.buttons,
-      "player_cmd_button2": cmd_player.buttons,
-      "war_tracker_remove_MENU": cmd_war_tracker.menu,
-      "guild_tracker_remove_MENU": cmd_guild_tracker.menu
-    },
+  3: {
+    "guild_cmd_button1": cmd_guild.buttons,
+    "guild_cmd_button2": cmd_guild.buttons,
+    "player_cmd_button1": cmd_player.buttons,
+    "player_cmd_button2": cmd_player.buttons,
+    "war_tracker_remove_MENU": cmd_war_tracker.menu,
+    "guild_tracker_remove_MENU": cmd_guild_tracker.menu,
+    "map_refresh": cmd_map.button
+  }
 }
 
 const autoCompleteENUM = {
@@ -39,27 +40,27 @@ const cmd_autoEMBED = {
   "guild_add": cmd_guild_tracker.add,
   "guild_remove": cmd_guild_tracker.remove,
   "bubble": cmd_bubble,
-  "map": cmd_map
+  "map": cmd_map.command
+
 }
 
-
 module.exports = ((client) => {
-  client.on('interactionCreate', async (int) =>{
+  client.on('interactionCreate', async (int) => {
     try {
       //auto handle chat commands
       if (cmd_autoEMBED[int.commandName] && int.isChatInputCommand()) {
-        log_str(`[Handler-AUTO] ${int.user.tag} used '${int.commandName?? int.customId?? int.id} (${int.type})' With args: ${int.options?.data.map(ent=>`${ent.name}(${ent.type}): ${ent.value}`).join(", ")}`)
+        log_str(`[Handler-AUTO] ${int.user.tag} used '${int.commandName ?? int.customId ?? int.id} (${int.type})' With args: ${int.options?.data.map(ent => `${ent.name}(${ent.type}): ${ent.value}`).join(", ")}`)
         await int.editReply(await cmd_autoEMBED[int.commandName](int))
       }
-       //auto complete handle
+      //auto complete handle
       else if (int.isAutocomplete() && autoCompleteENUM[`${int.commandName}-${int.options.getFocused(true).name}`]) {
         autoCompleteENUM[`${int.commandName}-${int.options.getFocused(true).name}`](int)
       }
-       //manual handler all
-      else if (cmd[int.type] && cmd[int.type][int.commandName?? int.customId]) cmd[int.type][int.commandName?? int.customId](int)
+      //manual handler all
+      else if (cmd[int.type] && cmd[int.type][int.commandName ?? int.customId]) cmd[int.type][int.commandName ?? int.customId](int)
     } catch (e) {
       log_str(`(Handler) [ERROR] ${e.stack.split("\n")[0]}`)
       console.log(e)
-    } 
+    }
   })
 })
